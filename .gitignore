@@ -28,3 +28,4 @@ dist-ssr
 App/info.xml
 js/*
 build/*
+public/assets

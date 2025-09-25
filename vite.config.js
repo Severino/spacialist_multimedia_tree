@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { XMLParser } from 'fast-xml-parser';
 import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
 
 let pluginName;
@@ -23,6 +24,9 @@ export default defineConfig({
         // this will set the process env for all imports (currently required for vee-validate)
         'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
         'process.env': {}
+    },
+    resolve: {
+        "@": resolve('/src'),
     },
     build: {
         sourcemap: true,
