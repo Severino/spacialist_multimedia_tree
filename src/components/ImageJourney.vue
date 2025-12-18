@@ -1,16 +1,18 @@
 <template>
     <div class="canvas-container h-100">
 
-        <!-- <div class="breadcrumbs">
+        <div class="breadcrumbs">
             <a href="/">HOME</a>
-            <a :href="'/?path=' + value.path" v-for="value in parts">{{ value.name }}</a>
+            <template
+                v-for="value in parts"
+                :key="value.path"
+            >
+                <span> > </span>
+                <a :href="'/?path=' + value.path">{{ value.name }}</a>
+            </template>
 
         </div>
-        <div v-show="Boolean(activeItem?.model)" class="three-dee-container" ref="threeDeeContainer"
-            style="height: 500px;"></div>
-        <canvas  ref="canvasRef" class="border border-2 border-dark">
-            Canvas is not supported in your browser.
-        </canvas> -->
+
         <div v-if="!activeItem">No active item selected.</div>
         <ImageViewer
             v-else-if="Boolean(activeItem?.image)"
@@ -27,7 +29,7 @@
 </template>
 
 <script setup>
-    import { computed, onMounted, ref, } from 'vue';
+    import { computed, onMounted, ref, watch, } from 'vue';
 
     import ImageViewer from './ImageViewer.vue';
     import ThreeDeeViewer from './ThreeDeeViewer.vue';
@@ -122,25 +124,17 @@
             }
         }
 
-        path.value = activePath.slice(0, -1).join('/');
+        path.value = activePath.join('/');
         activeItem.value = currentItem;
+
+        console.log("path:" , path.value, "activePath:", activePath)
+        updateParts();
     });
 
-    const parts = computed(() => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const pathParts = urlParams.get('path')?.split(',') ?? [];
-
-        let paths = [];
-        do {
-            let path = (pathParts.join('/'));
-            let name = pathParts.pop();
-            paths.push({ path, name });
-        } while (path.length > 0);
-
-        return paths;
-    });
+    const parts = ref([]);
 
     const updatePath = (item) => {
+        console.log('Updating path with item:', item);
         path.value.split('/').pop();
         if (!item.root) {
             if (path.value) {
@@ -148,11 +142,20 @@
             }
             path.value += item.name;
         }
-
+        updateParts();
         // SET URL parameter
         const url = new URL(window.location);
         url.searchParams.set('path', path.value.split('/').join(','));
         window.history.pushState({}, '', url);
+    }
+
+    const updateParts = () => {
+        parts.value = path.value.split('/').map((name, index, arr) => {
+            return {
+                name: name,
+                path: arr.slice(0, index + 1).join('/')
+            };
+        });
     }
 
     const mount = (item) => {
