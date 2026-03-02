@@ -1,7 +1,7 @@
 {
-    "name": "spacialist_plugin_template",
-    "pluginName": "Template",
-    "description": "A template for creating Spacialist plugins.",
+    "name": "spacialist_plugin_multimedia_tree",
+    "pluginName": "MultimediaTree",
+    "description": "Plugin to allow a visual navigation in the project using images, maps and 3D objects.",
     "private": true,
     "type": "module",
     "scripts": {

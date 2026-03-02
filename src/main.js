@@ -8,8 +8,10 @@ import ImageJourney from './components/ImageJourney.vue';
 import * as en from './i18n/en.json';
 import * as de from './i18n/de.json';
 
-const id = 'template';
+const id = 'multimedia-tree';
 const of = id;
+
+console.log("MultimediaTree plugin loaded");
 
 SpPS.register({
     id,
@@ -21,13 +23,13 @@ SpPS.register({
 
 SpPS.intoSlot({
     of,
-    key: 'template',
+    key: 'multimedia-tree',
     slot: 'tab',
-    icon: 'fa-folder',
-    label: 'template',
+    icon: 'fa-location-dot',
+    label: 'multimedia-tree',
     component: ImageJourney,
-    componentTag: 'tmp',
+    componentTag: 'MultimediaTreeTab',
     props: {
-        title: 'Template #1',
+        title: 'Multimedia Tree',
     }
 });

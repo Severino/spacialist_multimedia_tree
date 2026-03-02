@@ -1,6 +1,6 @@
 <template>
     <div class="canvas-container h-100">
-
+<!-- 
         <div class="breadcrumbs">
             <a href="/">HOME</a>
             <template
@@ -11,7 +11,12 @@
                 <a :href="'/?path=' + value.path">{{ value.name }}</a>
             </template>
 
+        </div> -->
+
+        <div>
+            Selected entity: {{ entity?.name ?? 'None' }}
         </div>
+        
 
         <div v-if="!activeItem">No active item selected.</div>
         <ImageViewer
@@ -127,8 +132,8 @@
         path.value = activePath.join('/');
         activeItem.value = currentItem;
 
-        console.log("path:" , path.value, "activePath:", activePath)
         updateParts();
+        console.log("Entity on mount:", entity.value);
     });
 
     const parts = ref([]);
@@ -163,4 +168,8 @@
         updatePath(item);
         activeItem.value = item;
     }
+
+    const entity = computed(() => {
+        return SpPS.api.store.entityStore.selectedEntity;
+    })
 </script>

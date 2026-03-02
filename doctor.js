@@ -1,5 +1,8 @@
 import { promises as fs } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
+import * as readline from 'node:readline/promises';
+import { stdin as input, stdout as output } from 'node:process';
+
 import { XMLParser } from 'fast-xml-parser';
 import {
     join,
@@ -61,6 +64,11 @@ const availableOptions = {
         description: 'Creates symlinks to the js folder',
         callback: callLinkJs,
     },
+    makeMigration: {
+        arguments: ['-m', '--make-migration'],
+        description: 'Creates a new migration file in the "migrations" folder with the current timestamp and the given name',
+        callback: callMakeMigration,
+    },
     manifest: {
         arguments: ['-m', '--manifest'],
         description: `Prints the path to the '${infoName}' file`,
@@ -99,15 +107,15 @@ async function main() {
         options,
     } = parseOptions();
 
-    if(errors || Object.keys(options).length > 1) {
+    if (errors || Object.keys(options).length > 1) {
         let message = '';
-        if(Object.keys(options).length > 1) {
+        if (Object.keys(options).length > 1) {
             message += 'You can only pass one option at a time.\n';
         }
-        if(unknownArguments.length > 0) {
+        if (unknownArguments.length > 0) {
             message += 'Unknown arguments: ' + unknownArguments.join(', ');
         }
-        if(duplicateArguments.length > 0) {
+        if (duplicateArguments.length > 0) {
             message += 'Duplicate arguments: ' + duplicateArguments.join(', ');
         }
         message += '\nPlease use -h or --help to see the available options.';
@@ -125,7 +133,7 @@ async function main() {
 try {
     await main();
     process.exit(0);
-} catch(e) {
+} catch (e) {
     error(e.message);
     process.exit(1);
 }
@@ -147,7 +155,7 @@ Host: ${DB_HOST}
 Port: ${DB_PORT}
 Datbase name: ${DB_DATABASE}
 `);
-    } catch(e) {
+    } catch (e) {
         error(`Could not read the environment variables: ${e.message}`);
         return;
     }
@@ -169,7 +177,7 @@ function getOptionsText() {
     let maxLength = 0;
     Object.values(availableOptions).forEach((option) => {
         const length = option.arguments.join(', ').length;
-        if(length > maxLength) {
+        if (length > maxLength) {
             maxLength = length;
         }
     });
@@ -188,7 +196,7 @@ async function callId() {
     try {
         const uuid = await getPluginsUUID();
         success(`Plugin id:\n${uuid}`);
-    } catch(e) {
+    } catch (e) {
         error(e.message);
     }
 }
@@ -199,13 +207,13 @@ async function callId() {
 async function callPath() {
     try {
         const isInPluginDir = await checkIfInPluginDir();
-        if(isInPluginDir) {
+        if (isInPluginDir) {
             success(`The plugin is in a Spacialist's plugin directory!`);
         } else {
             error(`The plugin is not in a Spacialist's plugin directory! 
 The spacialist plugin directory is located at: 'app/Plugins/{PluginName}'`);
         }
-    } catch(e) {
+    } catch (e) {
         systemError(`Application path could not be checked: ${e.message}`);
     }
 }
@@ -215,7 +223,7 @@ async function checkIfInPluginDir() {
     const pluginDir = getSpacialistPath('package.json');
     const content = await fs.readFile(pluginDir, 'utf-8');
     const packageJson = JSON.parse(content);
-    if(packageJson.name?.toLowerCase && packageJson.name.toLowerCase() === 'spacialist') {
+    if (packageJson.name?.toLowerCase && packageJson.name.toLowerCase() === 'spacialist') {
         isInPluginDir = true;
     }
     return isInPluginDir;
@@ -227,7 +235,7 @@ function getSpacialistPath(...dest) {
 }
 
 async function getSpacialistPluginJsFolder(path = []) {
-    if(!Array.isArray(path)) {
+    if (!Array.isArray(path)) {
         path = [path];
     }
     return getSpacialistPath('storage', 'app', 'private', 'plugins', ...path);
@@ -237,12 +245,12 @@ async function getDeployedScriptFileName() {
     let uuid = null;
     try {
         uuid = await getPluginsUUID();
-    } catch(e) {
+    } catch (e) {
         error(e.message);
         return;
     }
 
-    if(!uuid) {
+    if (!uuid) {
         error('Plugin UUID not found');
         return;
     }
@@ -255,12 +263,72 @@ async function getDeployedScriptFileName() {
  * ================  Call the manifest function  ========================
  */
 
+async function callMakeMigration() {
+    startSection('Make migration');
+    const migrationsDir = join(__dirname, 'Migrations');
+
+    const rl = readline.createInterface({ input, output });
+    let answer = ''
+    while (!answer) {
+        answer = await rl.question("What's the name of the migration? (use snake_case) ");
+    }
+    rl.close();
+
+    try {
+        await fs.access(migrationsDir);
+    } catch (e) {
+        try {
+            await fs.mkdir(migrationsDir);
+            success(`Migrations directory created at ${migrationsDir}`);
+        } catch (e) {
+            error(`Failed to create migrations directory at ${migrationsDir}: ${e.message}`);
+            return;
+        }
+    }
+
+    const timestamp = new Date().toISOString().replace(/\..*$/g, '').replace(/[.:]/g, '').replace(/[\s-T]/g, '_');
+    const migrationName = answer;
+    const fileName = `${timestamp}_${migrationName}.php`;
+    const filePath = join(migrationsDir, fileName);
+    const migrationClassName = migrationName.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
+
+    await fs.writeFile(filePath, `
+<?php
+
+use Illuminate\\Support\\Facades\\Schema;
+use Illuminate\\Database\\Schema\\Blueprint;
+use Illuminate\\Database\\Migrations\\Migration;
+
+class ${migrationClassName} extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        // Insert your migration code here
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        // Insert your rollback code here
+    }
+}`);
+}
+
 async function callManifest() {
     startSection('Check if a manifest file exists');
     let succeeded = {};
-    for(const file of [infoPath, legacyInfoPath, 'lib/App/info.xml']) {
+    for (const file of [infoPath, legacyInfoPath, 'lib/App/info.xml']) {
         const errorMessage = await hasManifestErrors(file);
-        if(errorMessage) {
+        if (errorMessage) {
             succeeded[file] = false;
             warning(`Manifest file "${file}" is not valid: ${errorMessage}`);
         } else {
@@ -269,7 +337,7 @@ async function callManifest() {
         }
     }
 
-    if(!succeeded[legacyInfoPath] && succeeded['lib/App/info.xml']) {
+    if (!succeeded[legacyInfoPath] && succeeded['lib/App/info.xml']) {
         hint(`It seems like your plugin uses the "lib" folder for the app. You must create the symlinks first.`);
     }
 }
@@ -277,23 +345,23 @@ async function callManifest() {
 async function hasManifestErrors(path) {
     try {
         await parseManifest(path);
-    } catch(e) {
+    } catch (e) {
         return 'file does not exist';
     }
     return false;
 }
 
 async function useManifest(path) {
-    if(manifest) return manifest;
+    if (manifest) return manifest;
 
-    for(const path of [infoPath, legacyInfoPath]) {
+    for (const path of [infoPath, legacyInfoPath]) {
         manifest = await parseManifest(join(__dirname, path));
-        if(manifest) {
+        if (manifest) {
             return manifest;
         }
     }
 
-    if(!manifest) {
+    if (!manifest) {
         throw new Error('Manifest file not found');
     }
 }
@@ -302,7 +370,7 @@ async function parseManifest(path) {
     const manifest = await readFile(path);
     const xmlParser = new XMLParser();
     const parsedManifest = xmlParser.parse(manifest);
-    if(!parsedManifest) {
+    if (!parsedManifest) {
         throw new Error('File is not a valid XML file: ' + path);
     }
     return parsedManifest;
@@ -319,7 +387,7 @@ async function callLinkLegacyInfo() {
 
     try {
         await fs.access(absinfoPath);
-    } catch(e) {
+    } catch (e) {
         error(`Actual '${infoName}' file does not exist at ${absinfoPath}`);
         return;
     }
@@ -327,7 +395,7 @@ async function callLinkLegacyInfo() {
     try {
         await fs.symlink(absinfoPath, abslegacyInfoPath);
         success(`Symlink created from ${absinfoPath} to ${abslegacyInfoPath}`);
-    } catch(e) {
+    } catch (e) {
         error(`Failed to create symlink from ${absinfoPath} to ${abslegacyInfoPath}:`, e);
     }
 }
@@ -343,12 +411,12 @@ async function callLinkFolders() {
     const libDirectory = join(__dirname, libDirName);
     try {
         dirNames = await fs.readdir(libDirectory);
-    } catch(e) {
+    } catch (e) {
         warning(`Plugin has no '${libDirName}' directory! Linking not necessary (or not possible.)`, e);
         return;
     }
     // Create symlink in parent directory
-    for(const dir of dirNames) {
+    for (const dir of dirNames) {
         log(`Checking if "${dir}" exists...`);
         const srcPath = join(libDirectory, dir);
         const destPath = join(__dirname, dir);
@@ -358,7 +426,7 @@ async function callLinkFolders() {
             const content = await fs.readdir(destPath);
             stale(`Directory "${dir}" already exists!`);
             continue;
-        } catch(e) {
+        } catch (e) {
             // If file does not exist, continue
         }
 
@@ -374,7 +442,7 @@ async function callLinkFolders() {
 
             await fs.symlink(srcPath, destPath);
             success(`Symlink successfully created for ${srcPath}!\n`);
-        } catch(e) {
+        } catch (e) {
             error(`Failed to create symlink for ${srcPath}!`, e);
         }
     }
@@ -391,7 +459,7 @@ async function callLinkJs() {
     try {
         await fs.readFile(srcPath);
         success(`File "${srcPath}" exists!`);
-    } catch(e) {
+    } catch (e) {
         error(`File "${srcPath}" does not exist!`);
         return;
     }
@@ -401,15 +469,15 @@ async function callLinkJs() {
         warning(`File "js/script.js" already exists!`);
         await ensureSourceMap();
 
-    } catch(e) {
+    } catch (e) {
         try {
             await fs.access(join(__dirname, 'js'));
             success(`Directory "js" already exists!`);
-        } catch(e) {
+        } catch (e) {
             try {
                 await fs.mkdir(join(__dirname, 'js'));
                 success(`Directory "js" created!`);
-            } catch(e) {
+            } catch (e) {
                 error(`Failed to create directory "js": ${e.message}`);
                 return;
             }
@@ -418,7 +486,7 @@ async function callLinkJs() {
             await fs.symlink(srcPath, join(__dirname, 'js', 'script.js'));
             success(`Symlink successfully created for "js/script.js"!`);
             await ensureSourceMap();
-        } catch(e) {
+        } catch (e) {
             error(`Failed to create symlink for "js/script.js": ${e.message}`);
         }
     }
@@ -429,14 +497,14 @@ async function callLinkJs() {
         await fs.readFile(destPath);
         warning(`File "${destPath}" already exists!`);
         return;
-    } catch(e) {
+    } catch (e) {
         // If file does not exist, continue
     }
 
     try {
         await fs.symlink(srcPath, destPath);
         success(`Symlink successfully created for ${srcPath} -> ${destPath}`);
-    } catch(e) {
+    } catch (e) {
         error(`Failed to create symlink for ${srcPath} -> ${destPath}:`, e);
     }
 }
@@ -448,7 +516,7 @@ async function callLinkJs() {
 async function callRenameDirectory(packageJson = null) {
     startSection('Rename directory');
     let name = null;
-    if(!packageJson) {
+    if (!packageJson) {
         const { pluginName } = await getPackageJsonValues();
         name = pluginName;
     } else {
@@ -460,7 +528,7 @@ async function callRenameDirectory(packageJson = null) {
     parts.push(name);
     const renamedDir = parts.join(sep);
 
-    if(originalDir === renamedDir) {
+    if (originalDir === renamedDir) {
         success(`Direcory name is corretly set!`);
     } else {
         //await fs.rename(originalDir, renamedDir)
@@ -476,7 +544,7 @@ async function callVerifyPackageJson() {
     startSection('Verify package.json');
     const { name, pluginName, version, description, missingFields } = await getPackageJsonValues();
 
-    if(missingFields.length > 0) {
+    if (missingFields.length > 0) {
         error(`Missing required fields in package.json: ${missingFields.join(', ')}`);
         return;
     }
@@ -493,7 +561,7 @@ async function getPackageJsonValues() {
     const missingFields = [];
     const requiredFields = ['name', 'plugin_name', 'version', 'description'];
     requiredFields.forEach((field) => {
-        if(packageJson[field] == null) {
+        if (packageJson[field] == null) {
             missingFields.push(field);
         }
     });
@@ -518,7 +586,7 @@ async function callVerifyVersion() {
     try {
         manifest = await useManifest();
         packageJson = await usePackageJson();
-    } catch(e) {
+    } catch (e) {
         error(`Manifest file not found: ${e.message}`);
         return;
     }
@@ -526,11 +594,11 @@ async function callVerifyVersion() {
     const manifestVersion = manifest?.info?.version;
     const packageJsonVersion = packageJson.version;
 
-    if(!manifestVersion) {
+    if (!manifestVersion) {
         error(`The '${infoName}' does not contain a version`);
     }
 
-    if(manifestVersion !== packageJson.version) {
+    if (manifestVersion !== packageJson.version) {
         warning(`Version in ${infoName} (v${packageJsonVersion}) did not match version in package.json (v${manifestVersion}). Updating package.json version to match ${infoName} => v${manifestVersion}`);
         packageJson.version = manifestVersion;
         await writeFile('package.json', JSON.stringify(packageJson, null, 4));
@@ -566,7 +634,7 @@ async function getPluginsUUID() {
     const result = await db.oneOrNone('SELECT uuid FROM plugins where name=$1', [pluginName]);
     const isPackageInstalled = result == null ? false : true;
 
-    if(!isPackageInstalled) {
+    if (!isPackageInstalled) {
         throw new Error('Package is not installed yet. You must install it manually in spacialist.');
     }
 
@@ -575,7 +643,7 @@ async function getPluginsUUID() {
 }
 
 async function useDB() {
-    if(!db) {
+    if (!db) {
         const programConfig = await getEnv();
         const pgp = pgPromise();
         db = pgp({
@@ -590,7 +658,7 @@ async function useDB() {
 }
 
 async function getEnv() {
-    if(!dotenvJson) {
+    if (!dotenvJson) {
         const dotEnvFile = await fs.readFile(getSpacialistPath('.env'), 'utf-8');
         dotenvJson = dotenv.parse(dotEnvFile);
     }
@@ -598,7 +666,7 @@ async function getEnv() {
 }
 
 async function usePackageJson() {
-    if(!packageJson) {
+    if (!packageJson) {
         packageJson = await parsePackageJson();
     }
     return packageJson;
@@ -609,17 +677,17 @@ async function parsePackageJson() {
     let fileContent;
     try {
         fileContent = await fs.readFile('package.json', 'utf-8');
-    } catch(e) {
+    } catch (e) {
         throw new Error(`No package.json found`);
     }
 
     let packageJson;
     try {
         packageJson = await JSON.parse(fileContent);
-        if(!packageJson) {
+        if (!packageJson) {
             throw new Error();
         }
-    } catch(e) {
+    } catch (e) {
         throw new Error(`Invalid "package.json" is not a valid JSON file`);
     }
 
@@ -667,11 +735,11 @@ async function ensureSourceMap() {
     try {
         await fs.access(deployedSourceFileLocation);
         success('Source file is already deployed.');
-    } catch(e) {
+    } catch (e) {
         try {
             await fs.symlink(sourceMapFilePath, deployedSourceFileLocation);
             success(`Source map file successfully linked to ${deployedSourceFileLocation}`);
-        } catch(e) {
+        } catch (e) {
             error(`Failed to create symlink: ${e.message}`);
         }
     }
@@ -683,7 +751,7 @@ async function ensureSourceMap() {
 function parseOptions() {
     const passedArguments = process.argv.slice(2);
     // Use help as default option
-    if(passedArguments.length === 0) {
+    if (passedArguments.length === 0) {
         passedArguments.push('-h');
     }
     const duplicateArguments = [];
@@ -692,10 +760,10 @@ function parseOptions() {
 
     passedArguments.forEach((argument) => {
         const optionName = getOptionsNameByArgument(argument);
-        if(optionName === null) {
+        if (optionName === null) {
             unknownArguments.push(argument);
         } else {
-            if(allAvailableOptionArguments[optionName]) {
+            if (allAvailableOptionArguments[optionName]) {
                 duplicateArguments.push(argument);
             } else {
                 const availableOption = availableOptions[optionName];
@@ -713,9 +781,9 @@ function parseOptions() {
 }
 
 function getOptionsNameByArgument(argument) {
-    for(const availableOptionKey in availableOptions) {
+    for (const availableOptionKey in availableOptions) {
         const availableOption = availableOptions[availableOptionKey];
-        if(availableOption.arguments.includes(argument)) {
+        if (availableOption.arguments.includes(argument)) {
             return availableOptionKey;
         }
     }
@@ -729,7 +797,7 @@ function getOptionsNameByArgument(argument) {
 function separator(text = '') {
     let infill = (text.length === 0) ? '' : `${' '.repeat(spaceCount)}${text}${' '.repeat(spaceCount)}`;
     let symbolCount = lineLength - infill.length;
-    if(symbolCount < 0) {
+    if (symbolCount < 0) {
         symbolCount = 0;
     }
     const leftCount = Math.ceil(symbolCount / 2);

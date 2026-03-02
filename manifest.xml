@@ -13,6 +13,9 @@
         <spacialist></spacialist>
         <php></php>
     </compatibility>
+    <migrations>
+        
+    </migrations>
     <dependencies>
         <!-- Other plugins this plugin depends on -->
     </dependencies>
