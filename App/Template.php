@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Plugins\Template\App\Template;
+namespace App\Plugins\MultimediaTree\App;
 
-class Template
+class MultimediaTree
 {
     /*
      Implement your backend logic here

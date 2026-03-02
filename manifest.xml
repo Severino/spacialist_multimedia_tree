@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <info>
     <!-- Must match id in JS SpPS.register call in kebab-case -->
-    <name>Template</name>
-    <title>Template Plugin</title>
-    <description>Base template for creating Plugins for Spacialist.</description>
+    <name>MultimediaTree</name>
+    <title>Multimedia Tree Plugin</title>
+    <description>Plugin to allow a visual navigation in the project using images, maps and 3D objects.</description>
     <version>1.0.0</version>
     <licence>MIT</licence>
     <authors>
@@ -27,10 +27,10 @@
     </permissions>
     <attributes>
         <!-- Attribute names must start with their plugin name -->
-        <attribute type="attribute" src="Attributes\TemplateAttribute" />
+        <!-- <attribute type="attribute" src="Attributes\TemplateAttribute" /> -->
     </attributes>
     <components>
         <!-- Attribute names must start with their plugin name -->
-        <component name="TemplateAttribute" src="src/components/Attribute.vue" />
+        <!-- <component name="TemplateAttribute" src="src/components/Attribute.vue" /> -->
     </components>
 </info>
