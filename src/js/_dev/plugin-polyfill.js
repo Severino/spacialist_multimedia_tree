@@ -1,4 +1,6 @@
 import DevComponentPreview from '../../components/_dev/DevComponentPreview.vue';
+import { mockRoutes } from './mock_routes';
+import { mockStores } from './mock_stores';
 import router from './router';
 import { useAppStore } from './store';
 /** 
@@ -15,6 +17,10 @@ export function createPluginPolyfill() {
     };
 
     window.SpPS = {
+        api: {
+            store: mockStores,
+            http: (method, url, data) => mockRoutes.http(method, url, data),
+        },
         register: ({ id, i18n, routes, store }) => { },
         registerI18n: (id, i18n) => { },
         registerComponent: (componentDefinition) => {

@@ -3,7 +3,7 @@
  * your plugin. Just delete this and start from scratch.
  */
 
-import ImageJourney from './components/ImageJourney.vue';
+import MultimediaTreeTab from './components/MultimediaTreeTab.vue';
 
 import * as en from './i18n/en.json';
 import * as de from './i18n/de.json';
@@ -27,7 +27,7 @@ SpPS.intoSlot({
     slot: 'tab',
     icon: 'fa-location-dot',
     label: 'multimedia-tree',
-    component: ImageJourney,
+    component: MultimediaTreeTab,
     componentTag: 'MultimediaTreeTab',
     props: {
         title: 'Multimedia Tree',

@@ -184,7 +184,6 @@
 
     const mount = async () => {
 
-        console.log('Mounting 3D item:', props.item);
         loading.value = true;
         progress.value = 0;
 
@@ -206,7 +205,6 @@
                 }
 
                 const model = gltf.scene;
-                console.log('Adding model to scene:', scene);
                 scene.add(model);
                 object.value = model;
 

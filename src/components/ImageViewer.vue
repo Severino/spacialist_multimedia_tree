@@ -12,16 +12,18 @@
 <script setup>
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { useCanvas } from '../composables/canvas-viewer';
-    import { Canvas, Circle, FabricImage, Point } from 'fabric';
-    import useClipboard from '../composables/clipboard';
+    import { Canvas, Circle, FabricImage, Point, FabricText as Text } from 'fabric';
 
-    const emit = defineEmits(['item-clicked']);
+    const emit = defineEmits(['item-clicked', 'update-active-child']);
 
     const props = defineProps({
+        activeChildId: Number | null,
+        lock: Boolean,
         item: {
             type: Object,
             required: true
-        }
+        },
+        children: Array,
     });
 
 
@@ -42,12 +44,18 @@
         }
     });
 
-    const { copyToClipboard } = useClipboard();
-
     watch(() => props.item, async () => {
         unmount();
         await mount();
     });
+
+    watch(() => props.activeChildId, async () => {
+        drawChildren();
+    });
+
+    watch(() => props.children, async () => {
+        drawChildren();
+    }, { deep: true });
 
 
     function setupZoomAndPan() {
@@ -57,6 +65,8 @@
 
         // Mouse wheel zoom
         canvas.on('mouse:wheel', function (opt) {
+            if (props.lock) return;
+
             const delta = opt.e.deltaY;
             let zoom = canvas.getZoom();
 
@@ -82,6 +92,8 @@
             canvas = new Canvas(canvasRef.value);
 
             canvas.on('mouse:down', function (opt) {
+                if (props.lock) return;
+
                 const evt = opt.e;
                 if (evt.button === 0) {
                     isPanning = true;
@@ -94,6 +106,8 @@
             });
 
             canvas.on('mouse:move', function (opt) {
+                if (props.lock) return;
+
                 if (isPanning) {
                     const e = opt.e;
                     const viewportTransform = canvas.viewportTransform;
@@ -127,6 +141,8 @@
             let lastTouchY = 0;
 
             canvas.on('touch:gesture', function (opt) {
+                if (props.lock) return;
+
                 if (opt.e.touches && opt.e.touches.length === 2) {
                     const touch1 = opt.e.touches[0];
                     const touch2 = opt.e.touches[1];
@@ -173,62 +189,55 @@
         if (canvas) {
             canvas.clear();
         }
-
     }
 
     const mount = async () => {
-        try {
-            const imageSrc = props.item.image
 
-            console.log('Mounting image:', props.item);
+        if (!props.item || !props.item.url) {
+            console.warn('No item or URL provided for ImageViewer.');
+            return;
+        }
+
+        try {
+            const imageSrc = props.item.url
 
             // Fabric.js v6+ correct API
-            image.value = await FabricImage.fromURL(imageSrc, {}, {
-                selectable: false,
-                hoverCursor: 'default',
-            });
-            console.log('Loading image from:', image.value);
-
-            image.value.on('mousedown', (event) => {
-                const scenePosition = event.scenePoint;
-                const relativeX = (scenePosition.x / image.value.width);
-                const relativeY = (scenePosition.y / image.value.height);
-                copyToClipboard(`position: {x: ${relativeX.toFixed(4)}, y: ${relativeY.toFixed(4)}}`);
-            });
-
-            // Add the image to the canvas first
-            canvas.add(image.value);
-
-            resetPosition();
-            const { image: imageDimensions } = getDimensions(image);
-
-            // Add marker for children
-            if (props.item.children) {
-                props.item.children.forEach(child => {
-                    const marker = new Circle({
-                        left: child.position.x * imageDimensions.width,
-                        top: child.position.y * imageDimensions.height,
-                        radius: 10,
-                        fill: 'red',
-                        stroke: 'black',
-                        strokeWidth: 2,
-                        selectable: false,
-                        originX: 'center',
-                        originY: 'center',
-                        hoverCursor: 'pointer',
-                    });
-                    canvas.add(marker);
-
-                    marker.on('mousedown', (event) => {
-                        emit('item-clicked', child);
-                    });
-
-                    activeMarkers.value.push(marker);
+            try {
+                image.value = await FabricImage.fromURL(imageSrc, {}, {
+                    selectable: false,
+                    hoverCursor: 'default',
                 });
+            } catch (error) {
+                console.error('Error loading image with FabricImage.fromURL:', error);
+                throw error;
             }
 
+            image.value.on('mousedown', (event) => {
+                if (event.e.ctrlKey) {
+                    event.e.preventDefault();
+                    // Ctrl + click to get coordinates
+                    const scenePosition = event.scenePoint;
+                    const relativeX = (scenePosition.x / image.value.width);
+                    const relativeY = (scenePosition.y / image.value.height);
+
+                    const child = props.children.find(c => c.entity_id === props.activeChildId);
+                    if (child) {
+                        emit('update-active-child', { ...child, x: relativeX, y: relativeY });
+                    } else {
+                        console.error('Active child not found for ID:', props.activeChildId);
+                    }
+
+                }
+            });
+
+            resetPosition();
+            // Add the image to the canvas first
+            canvas.add(image.value);
+            console.trace('Image added to canvas:');
+
+            drawChildren();
+
             canvas.renderAll();
-            console.log('Image added to canvas and rendered');
         } catch (error) {
             console.error('Failed to load image:', error);
         }
@@ -270,4 +279,59 @@
             scale,
         }
     };
+
+
+    const drawChildren = () => {
+        if (props.children) {
+
+           canvas.getObjects()
+                .filter(obj => obj !== image.value)
+                .forEach(obj => canvas.remove(obj));
+
+
+            const { image: imageDimensions } = getDimensions(image);
+
+            props.children.forEach(child => {
+                const marker = new Circle({
+                    left: child.x * imageDimensions.width,
+                    top: child.y * imageDimensions.height,
+                    radius: 20,
+                    fill: (child.entity_id === props.activeChildId) ? 'yellow' : 'white',
+                    stroke: 'black',
+                    strokeWidth: 2,
+                    selectable: false,
+                    originX: 'center',
+                    originY: 'center',
+                    hoverCursor: 'pointer',
+                });
+                canvas.add(marker);
+
+                canvas.getZoom();
+
+
+                const label = new Text(child.name || "N / A", {
+                    fontFamily: 'Arial',
+                    fontWeight: 'bold',
+                    left: child.x * imageDimensions.width,
+                    top: child.y * imageDimensions.height + 25,
+                    fontSize: 30,
+                    fill: (child.entity_id === props.activeChildId) ? 'yellow' : 'white',
+                    shadow: 'rgba(0,0,0) 0px 0px 10px',
+                    selectable: false,
+                    originX: 'center',
+                    originY: 'top',
+                    hoverCursor: 'pointer',
+                });
+                canvas.add(label);
+
+                window.canvas = canvas;
+
+                marker.on('mousedown', (event) => {
+                    emit('item-clicked', child);
+                });
+
+                activeMarkers.value.push(marker);
+            });
+        }
+    }
 </script>

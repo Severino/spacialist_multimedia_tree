@@ -23,7 +23,7 @@
     "version": "1.0.0",
     "dependencies": {
         "dhc-components": "github:DH-Center-Tuebingen/dhc-components",
-        "fabric": "^6.7.1",
+        "fabric": "^7.2.0",
         "pg-promise": "^11.13.0",
         "three": "^0.180.0",
         "vee-validate": "^4.15.1",

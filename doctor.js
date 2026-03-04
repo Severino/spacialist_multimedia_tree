@@ -292,8 +292,11 @@ async function callMakeMigration() {
     const filePath = join(migrationsDir, fileName);
     const migrationClassName = migrationName.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
 
-    await fs.writeFile(filePath, `
-<?php
+    const {pluginName} = await getPackageJsonValues();
+
+    await fs.writeFile(filePath, `<?php
+
+namespace App\\Plugins\\${pluginName}\\Migrations;
 
 use Illuminate\\Support\\Facades\\Schema;
 use Illuminate\\Database\\Schema\\Blueprint;
@@ -306,7 +309,7 @@ class ${migrationClassName} extends Migration
      *
      * @return void
      */
-    public function up()
+    public function migrate()
     {
         // Insert your migration code here
     }
@@ -316,7 +319,7 @@ class ${migrationClassName} extends Migration
      *
      * @return void
      */
-    public function down()
+    public function rollback()
     {
         // Insert your rollback code here
     }
@@ -559,7 +562,7 @@ async function callVerifyPackageJson() {
 async function getPackageJsonValues() {
     const packageJson = await usePackageJson();
     const missingFields = [];
-    const requiredFields = ['name', 'plugin_name', 'version', 'description'];
+    const requiredFields = ['name', 'pluginName', 'version', 'description'];
     requiredFields.forEach((field) => {
         if (packageJson[field] == null) {
             missingFields.push(field);
@@ -568,7 +571,7 @@ async function getPackageJsonValues() {
 
     return {
         name: packageJson.name,
-        pluginName: packageJson.plugin_name,
+        pluginName: packageJson.pluginName,
         version: packageJson.version,
         description: packageJson.description,
         missingFields,
