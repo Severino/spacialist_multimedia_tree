@@ -155,6 +155,7 @@
                 const child = props.childCoordinates.find(c => c.entity_id === props.activeChildId);
                 emit('update-active-child', {
                     entity_id: props.activeChildId,
+                    parent_id: props.item.id,
                     ...position
                 });
 

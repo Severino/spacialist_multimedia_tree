@@ -220,7 +220,7 @@
                     const scenePosition = event.scenePoint;
                     const relativeX = (scenePosition.x / image.value.width);
                     const relativeY = (scenePosition.y / image.value.height);
-                    emit('update-active-child', { entity_id: props.activeChildId, x: relativeX, y: relativeY, z: 0 });
+                    emit('update-active-child', { entity_id: props.activeChildId, parent_id: props.item.id, x: relativeX, y: relativeY, z: 0 });
                 }
             });
 

@@ -25,7 +25,7 @@
 
         <div class="d-flex">
             <ChildSelection
-                class="mb-2 me-5"
+                class="mb-2 me-5 flex-shrink-0"
                 v-model="activeChildId"
                 :children="childEntities"
                 @visit-child="setEntity"

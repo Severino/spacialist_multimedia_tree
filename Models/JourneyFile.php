@@ -27,6 +27,10 @@ class JourneyFile extends Model
     {
         $journeyFile = self::where('entity_id', $entityId)->first();
         
+        if(!$journeyFile) {
+            return null;
+        }
+
         if($journeyFile->file) {
             $journeyFile->file->setFileInfo();
         }
