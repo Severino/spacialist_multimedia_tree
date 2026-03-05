@@ -153,10 +153,9 @@
                 }
 
                 const child = props.childCoordinates.find(c => c.entity_id === props.activeChildId);
-                console.trace('Updating child position with ALT-click:', child, position);
                 emit('update-active-child', {
                     entity_id: props.activeChildId,
-                    position
+                    ...position
                 });
 
             } else if (firstIntersect.object.target) {
@@ -241,7 +240,7 @@
             const geometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
             const material = new THREE.MeshBasicMaterial({ color:  child.entity_id === props.activeChildId ? 0x0000ff : 0xff0000 });
             const sphere = new THREE.Mesh(geometry, material);
-            sphere.position.set(child.position.x, child.position.y, child.position.z);
+            sphere.position.set(child.x, child.y, child.z);
             sphere.target = child.name; // Store reference to child data
             scene.add(sphere);
             childGeometries.value.push(sphere);

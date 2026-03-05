@@ -14,8 +14,6 @@ function parseGetParams(url) {
 
 export const mockRoutes = {
     http(method, url, data) {
-        console.log(`Mock HTTP Request: ${method} ${url}`, data);
-
         if (url.startsWith('file')) {
             const { base_url, query } = parseGetParams(url);
             if (base_url === 'file') {
@@ -34,14 +32,16 @@ export const mockRoutes = {
         if (url.startsWith('multimediatree/coordinates')) {
             const entityId = url.split('/')[2];
             if (method === 'get') {
-                const entity = entityMap[entityId];
 
+                const entity = entityMap[entityId];
                 const childCoordinates = [];
+
+
                 entity.children.forEach(child => {
 
                     let coordinates = null;
                     const storedCoordinates = localStorage.getItem(`multimediatree/coordinates/${child.id}`) // Store the coordinates for this child
-                    if(storedCoordinates) {
+                    if (storedCoordinates) {
                         coordinates = JSON.parse(storedCoordinates);
                     } else {
                         return;
@@ -54,7 +54,14 @@ export const mockRoutes = {
                     });
                 });
 
+
                 return childCoordinates;
+            }
+
+            if (method === 'put') {
+                localStorage.setItem(`multimediatree/coordinates/${entityId}`, JSON.stringify(data));
+                console.log(`Stored coordinates for entity ${entityId}:`, data);
+                return null;
             }
         }
 

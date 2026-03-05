@@ -11,7 +11,6 @@ import * as de from './i18n/de.json';
 const id = 'multimedia-tree';
 const of = id;
 
-console.log("MultimediaTree plugin loaded");
 
 SpPS.register({
     id,

@@ -1,24 +1,42 @@
 <template>
     <div class="mm-tab h-100 d-flex flex-column">
-        <button
-            v-if="parent"
-            @click="() => setEntity(parent.id)"
-        >
-            {{ parent.name }}
-        </button>
+        <header class="mb-4">
+            <button
+                v-if="parent"
+                class="btn btn-sm btn-outline-primary"
+                @click="() => setEntity(parent.id)"
+                style="width: auto;"
+            >
+                <FontAwesomeIcon :icon="faArrowUp" />
+                {{ parent.name }}
+            </button>
+            <span
+                v-else
+                class="fw-bold text-primary"
+            >
+
+                <FontAwesomeIcon
+                    :icon="faArrowDown"
+                    class="me-1"
+                />
+                TOP
+            </span>
+        </header>
+
         <div class="d-flex">
+            <ChildSelection
+                class="mb-2 me-5"
+                v-model="activeChildId"
+                :children="childEntities"
+                @visit-child="setEntity"
+            />
             <FileSelection
                 class="mb-2 flex-grow-1"
                 :files="linkedFiles"
                 :selectedId="selectedFile?.id ?? null"
                 @update:selected="updateSelectedFile"
             />
-            <ChildSelection
-                class="mb-2"
-                v-model="activeChildId"
-                :children="childEntities"
-                @visit-child="setEntity"
-            />
+
         </div>
         <FileJourney
             class="flex-grow-1"
@@ -39,6 +57,8 @@
     import ChildSelection from './ChildSelection.vue';
     import FileJourney from './FileJourney.vue';
     import FileSelection from './FileSelection.vue';
+    import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+    import { faArrowDown, faArrowUp } from '@fortawesome/free-solid-svg-icons';
 
     const linkedFiles = ref([]);
     const childCoordinates = ref([]);
@@ -115,12 +135,9 @@
     }
 
     async function updateChildCoordinates(coordinates) {
-        console.log('Updating child coordinates with:', coordinates);
-        console.log('Current entity:', entity.value);
         if (!entity.value?.id || !coordinates.entity_id) return;
 
         const index = childCoordinates.value.findIndex(child => child.entity_id === coordinates.entity_id);
-        console.log('Found child index:', index);
 
         if (index !== -1) {
             // Update existing child coordinates
@@ -131,8 +148,7 @@
             childCoordinates.value.push(coordinates);
         }
 
-        localStorage.setItem(`multimediatree/coordinates/${coordinates.entity_id}`, JSON.stringify(coordinates));
-
+        await SpPS.api.http("put", `multimediatree/coordinates/${coordinates.entity_id}`, coordinates);
     }
 
     const childEntities = computed(() => {

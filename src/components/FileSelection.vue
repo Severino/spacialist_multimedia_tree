@@ -1,8 +1,8 @@
 <template>
-    <div>
+    <div class="w-100">
         <b>Linked Files</b>
 
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 overflow-x-auto p-2 w-100">
             <input
                 name="mmt-file-selection"
                 id="none"
@@ -15,7 +15,6 @@
                 class="d-flex align-items-center justify-content-center file-select"
                 :class="{ 'file-select-active': isSelected(null) }"
                 for="none"
-                style="width: 256px; height:128px;"
             >None</label>
             <template
                 v-for="(file, index) in files"
@@ -31,7 +30,7 @@
                 >
                 <label
                     class="d-block file-select"
-                    :class="{'file-select-active': isSelected(file.id)}"
+                    :class="{ 'file-select-active': isSelected(file.id) }"
                     :for="'file-' + index"
                 >
                     <img
@@ -42,13 +41,12 @@
                     >
                     <div
                         v-else-if="file.category === '3d'"
-                        class="d-flex align-items-center justify-content-center"
+                        class="d-flex flex-column align-items-center justify-content-center"
                         style="width: 100%; height: 100%; background-color: #eee; font-weight: bold;"
                     >
-                    
-                    <span>{{ file.name ?? "N / A" }}</span>
-                    <br/>
-                    <span>3D Model</span>
+
+                        <FontAwesomeIcon :icon="faCube" size="2x" class="mb-2" />
+                        <span>{{ file.name ?? "N / A" }}</span>
                     </div>
                 </label>
             </template>
@@ -58,6 +56,9 @@
 </template>
 
 <script setup>
+import { faCube } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+
 
     const props = defineProps({
         files: {
@@ -94,6 +95,7 @@
 
         height: 128px;
         width: 256px;
+        flex-shrink: 0;
         transform: scale(1);
 
         transition: all 0.2s ease;
