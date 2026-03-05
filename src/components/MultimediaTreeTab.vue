@@ -16,14 +16,15 @@
             <ChildSelection
                 class="mb-2"
                 v-model="activeChildId"
-                :children="entity?.children || []"
+                :children="childEntities"
                 @visit-child="setEntity"
             />
         </div>
         <FileJourney
             class="flex-grow-1"
             :activeChildId="activeChildId"
-            :children="childCoordinates"
+            :child-coordinates="childCoordinates"
+            :child-entities="childEntities"
             :file="selectedFile"
             :lock="true"
             @update-active-child="updateChildCoordinates"
@@ -45,6 +46,7 @@
     const activeChildId = ref(null);
 
     async function getJourneyFile() {
+        activeChildId.value = null;
         if (entity.value?.id) {
             const url = `multimediatree/journey_file/${entity.value.id}`;
             const response = await SpPS.api.http("get", url);
@@ -113,20 +115,29 @@
     }
 
     async function updateChildCoordinates(coordinates) {
-        console.log('Updating child coordinates:', coordinates);
+        console.log('Updating child coordinates with:', coordinates);
+        console.log('Current entity:', entity.value);
         if (!entity.value?.id || !coordinates.entity_id) return;
 
         const index = childCoordinates.value.findIndex(child => child.entity_id === coordinates.entity_id);
+        console.log('Found child index:', index);
 
         if (index !== -1) {
             // Update existing child coordinates
             childCoordinates.value[index] = coordinates;
+
         } else {
             // Add new child coordinates
             childCoordinates.value.push(coordinates);
         }
+
         localStorage.setItem(`multimediatree/coordinates/${coordinates.entity_id}`, JSON.stringify(coordinates));
 
     }
+
+    const childEntities = computed(() => {
+        if (!entity.value?.children) return [];
+        return entity?.value.children || []
+    });
 
 </script>

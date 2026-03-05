@@ -49,7 +49,6 @@
     let scene = null;
     let raycaster = null;
     let animationId = null;
-    let clickListener = null;
 
     const {
         canvasRef,
@@ -68,7 +67,8 @@
     const props = defineProps({
         activeChildId: Number,
         lock: Boolean,
-        children: Array,
+        childCoordinates: Array,
+        childEntities: Array,
         item: {
             type: Object,
             required: true
@@ -90,9 +90,13 @@
         }
     });
 
-    watch(() => props.children, () => {
+    watch(() => props.childCoordinates, () => {
         updateChildren();
     }, { deep: true });
+
+    watch(() => props.activeChildId, () => {
+        updateChildren();
+     });
 
     const unmount = async () => {
 
@@ -148,8 +152,7 @@
                     z: firstIntersect.point.z
                 }
 
-                const child = props.children.find(c => c.entity_id === props.activeChildId);
-                console.log(props.children);
+                const child = props.childCoordinates.find(c => c.entity_id === props.activeChildId);
                 console.trace('Updating child position with ALT-click:', child, position);
                 emit('update-active-child', {
                     entity_id: props.activeChildId,
@@ -223,18 +226,20 @@
 
     const childGeometries = ref([]);
     const updateChildren = () => {
-        // console.log(childGeometries.value);
         // Remove old child geometries
         childGeometries.value.forEach(geom => {
             geom.removeFromParent();
         });
         childGeometries.value = [];
 
+        const { cameraDistance } = getObjectDimensions();
 
-        props.children.forEach(child => {
+        const sphereRadius = 0.01 * cameraDistance;
+
+        props.childCoordinates.forEach(child => {
             // For 3D models, we might want to log the 3D position directly
-            const geometry = new THREE.SphereGeometry(0.1, 16, 16);
-            const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const geometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
+            const material = new THREE.MeshBasicMaterial({ color:  child.entity_id === props.activeChildId ? 0x0000ff : 0xff0000 });
             const sphere = new THREE.Mesh(geometry, material);
             sphere.position.set(child.position.x, child.position.y, child.position.z);
             sphere.target = child.name; // Store reference to child data
@@ -288,6 +293,12 @@
             scene.add(model);
             object.value = model;
 
+
+            const { center, cameraDistance } = getObjectDimensions();
+
+            controls.target = center;
+            camera.position.set(0, cameraDistance / 2, cameraDistance);
+
             updateChildren();
 
             // Start animation
@@ -305,5 +316,22 @@
             loading.value = false;
         }
     };
+
+    const getObjectDimensions = () => {
+        let center = new THREE.Vector3();
+        let size = new THREE.Vector3();
+        let cameraDistance = 2;
+
+        if (object.value) {
+            let bbox = new THREE.Box3().setFromObject(object.value);
+            bbox.getCenter(center);
+            bbox.getSize(size);
+
+            let maxSize = Math.max(size.x, size.y, size.z);
+            cameraDistance = maxSize / 2 / Math.tan(camera.fov / 2 * (Math.PI / 180));
+        }
+
+        return { center, size, cameraDistance };
+    }
 
 </script>

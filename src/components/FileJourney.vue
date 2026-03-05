@@ -1,6 +1,6 @@
 <template>
-    <div class="canvas-container">
-<!-- 
+    <div class="canvas-container h-100">
+        <!-- 
         <div class="breadcrumbs">
             <a href="/">HOME</a>
             <template
@@ -11,14 +11,15 @@
                 <a :href="'/?path=' + value.path">{{ value.name }}</a>
             </template>
 
-        </div> -->
+</div> -->
         <div v-if="!file">No active item selected.</div>
         <ImageViewer
             v-else-if="file.category === 'image'"
             :item="file"
             :lock="false"
             :activeChildId="activeChildId"
-            :children="children"
+            :childCoordinates="childCoordinates"
+            :childEntities="childEntities"
             @update-active-child="emit('update-active-child', $event)"
             @item-clicked="emit('select-child', $event)"
         />
@@ -27,7 +28,8 @@
             :item="file"
             :lock="lock"
             :activeChildId="activeChildId"
-            :children="children"
+            :childCoordinates="childCoordinates"
+            :childEntities="childEntities"
             @update-active-child="emit('update-active-child', $event)"
             @item-clicked="mount"
         />
@@ -47,7 +49,8 @@
         activeChildId: Number,
         lock: Boolean,
         file: Object,
-        children: Array,
+        childCoordinates: Array,
+        childEntities: Array,
     });
 
     const emit = defineEmits(['select-child', 'update-active-child']);

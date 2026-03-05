@@ -23,7 +23,8 @@
             type: Object,
             required: true
         },
-        children: Array,
+        childEntities: Array,
+        childCoordinates: Array,
     });
 
 
@@ -53,7 +54,7 @@
         drawChildren();
     });
 
-    watch(() => props.children, async () => {
+    watch(() => props.childCoordinates, async () => {
         drawChildren();
     }, { deep: true });
 
@@ -135,41 +136,41 @@
                 resetPosition(true);
             });
 
-            // Touch support for mobile
-            let lastDistance = 0;
-            let lastTouchX = 0;
-            let lastTouchY = 0;
+            // // Touch support for mobile
+            // let lastDistance = 0;
+            // let lastTouchX = 0;
+            // let lastTouchY = 0;
 
-            canvas.on('touch:gesture', function (opt) {
-                if (props.lock) return;
+            // canvas.on('touch:gesture', function (opt) {
+            //     if (props.lock) return;
 
-                if (opt.e.touches && opt.e.touches.length === 2) {
-                    const touch1 = opt.e.touches[0];
-                    const touch2 = opt.e.touches[1];
+            //     if (opt.e.touches && opt.e.touches.length === 2) {
+            //         const touch1 = opt.e.touches[0];
+            //         const touch2 = opt.e.touches[1];
 
-                    const distance = Math.sqrt(
-                        Math.pow(touch2.clientX - touch1.clientX, 2) +
-                        Math.pow(touch2.clientY - touch1.clientY, 2)
-                    );
+            //         const distance = Math.sqrt(
+            //             Math.pow(touch2.clientX - touch1.clientX, 2) +
+            //             Math.pow(touch2.clientY - touch1.clientY, 2)
+            //         );
 
-                    if (lastDistance > 0) {
-                        let zoom = canvas.getZoom();
-                        zoom *= distance / lastDistance;
+            //         if (lastDistance > 0) {
+            //             let zoom = canvas.getZoom();
+            //             zoom *= distance / lastDistance;
 
-                        if (zoom > maxZoom) zoom = maxZoom;
-                        if (zoom < minZoom) zoom = minZoom;
+            //             if (zoom > maxZoom) zoom = maxZoom;
+            //             if (zoom < minZoom) zoom = minZoom;
 
-                        const center = new Point(
-                            (touch1.clientX + touch2.clientX) / 2,
-                            (touch1.clientY + touch2.clientY) / 2
-                        );
+            //             const center = new Point(
+            //                 (touch1.clientX + touch2.clientX) / 2,
+            //                 (touch1.clientY + touch2.clientY) / 2
+            //             );
 
-                        canvas.zoomToPoint(center, zoom);
-                    }
+            //             canvas.zoomToPoint(center, zoom);
+            //         }
 
-                    lastDistance = distance;
-                }
-            });
+            //         lastDistance = distance;
+            //     }
+            // });
         } else {
             console.error('Canvas reference is not available.');
         }
@@ -213,30 +214,23 @@
             }
 
             image.value.on('mousedown', (event) => {
-                if (event.e.ctrlKey) {
+                if (props.activeChildId && event.e.altKey) {
                     event.e.preventDefault();
                     // Ctrl + click to get coordinates
                     const scenePosition = event.scenePoint;
                     const relativeX = (scenePosition.x / image.value.width);
                     const relativeY = (scenePosition.y / image.value.height);
 
-                    const child = props.children.find(c => c.entity_id === props.activeChildId);
-                    if (child) {
-                        emit('update-active-child', { ...child, x: relativeX, y: relativeY });
-                    } else {
-                        console.error('Active child not found for ID:', props.activeChildId);
-                    }
+                    console.log({ entity_id: props.activeChildId, x: relativeX, y: relativeY });
 
+                    emit('update-active-child', { entity_id: props.activeChildId, x: relativeX, y: relativeY });
                 }
             });
 
             resetPosition();
             // Add the image to the canvas first
             canvas.add(image.value);
-            console.trace('Image added to canvas:');
-
             drawChildren();
-
             canvas.renderAll();
         } catch (error) {
             console.error('Failed to load image:', error);
@@ -244,28 +238,41 @@
     };
 
     const resetPosition = (render = false) => {
-        const { scale: targetScale, image: imageDimensions, canvas: canvasDimensions } = getDimensions(image);
+        const { scale: targetScale, image: imageDimensions, canvas: canvasDimensions } = getDimensions();
 
         const viewportTransform = canvas.viewportTransform;
         viewportTransform[0] = targetScale;
         viewportTransform[3] = targetScale;
-        viewportTransform[4] = (canvasDimensions.width - imageDimensions.width * targetScale) / 2;
-        viewportTransform[5] = (canvasDimensions.height - imageDimensions.height * targetScale) / 2;
+        viewportTransform[4] = canvasDimensions.width / 2;
+        // viewportTransform[5] = (canvasDimensions.height - imageDimensions.height * targetScale);
 
+
+        viewportTransform[5] = canvasDimensions.height / 2;
+
+        console.log(viewportTransform);
         if (render) {
             canvas.renderAll();
         }
     }
 
     const getDimensions = () => {
-        // Scale image to fit canvas if needed
+        // Scale image to fit canvas if needed)
+
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
-        const imgWidth = image.value.width;
-        const imgHeight = image.value.height;
+
+        let imageWidth = 0;
+        let imageHeight = 0;
+        if (image.value) {
+            imageWidth = image.value.width;
+            imageHeight = image.value.height;
+        } else {
+            console.warn('Image not loaded yet, using default dimensions');
+        }
+
 
         // Calculate scale to fit image in canvas
-        const scale = Math.min(canvasWidth / imgWidth, canvasHeight / imgHeight);
+        const scale = Math.min(canvasWidth / imageWidth, canvasHeight / imageHeight);
 
         return {
             canvas: {
@@ -273,8 +280,8 @@
                 height: canvasHeight
             },
             image: {
-                width: imgWidth,
-                height: imgHeight
+                width: imageWidth,
+                height: imageHeight
             },
             scale,
         }
@@ -282,23 +289,26 @@
 
 
     const drawChildren = () => {
-        if (props.children) {
+        if (props.childCoordinates && image.value) {
 
-           canvas.getObjects()
+            canvas.getObjects()
                 .filter(obj => obj !== image.value)
                 .forEach(obj => canvas.remove(obj));
 
 
-            const { image: imageDimensions } = getDimensions(image);
+            const { image: imageDimensions, scale } = getDimensions();
 
-            props.children.forEach(child => {
+            props.childCoordinates.forEach(child => {
+
+                const childEntity = props.childEntities.find(c => c.id === child.entity_id);
+
                 const marker = new Circle({
                     left: child.x * imageDimensions.width,
                     top: child.y * imageDimensions.height,
-                    radius: 20,
+                    radius: 5 / scale,
                     fill: (child.entity_id === props.activeChildId) ? 'yellow' : 'white',
                     stroke: 'black',
-                    strokeWidth: 2,
+                    strokeWidth: 1 / scale,
                     selectable: false,
                     originX: 'center',
                     originY: 'center',
@@ -308,13 +318,12 @@
 
                 canvas.getZoom();
 
-
-                const label = new Text(child.name || "N / A", {
+                const label = new Text(childEntity?.name || "N / A", {
                     fontFamily: 'Arial',
                     fontWeight: 'bold',
                     left: child.x * imageDimensions.width,
-                    top: child.y * imageDimensions.height + 25,
-                    fontSize: 30,
+                    top: child.y * imageDimensions.height + (10 / scale),
+                    fontSize: 14 / scale,
                     fill: (child.entity_id === props.activeChildId) ? 'yellow' : 'white',
                     shadow: 'rgba(0,0,0) 0px 0px 10px',
                     selectable: false,
