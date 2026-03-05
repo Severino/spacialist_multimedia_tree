@@ -1,12 +1,12 @@
 import { reactive } from "vue"
-import { Church1, Street1, Tower1 } from "./mock_files"
+import { Church1, FaulaDeTomas2, MortillaDelAzuer, Street1, Tower1 } from "./mock_files"
 
 export const london = {
     id: 11,
     name: 'London',
     children: [],
     parent: 1,
-    linkedImages: []
+    linkedFiles: []
 }
 
 export const manchester = {
@@ -14,6 +14,7 @@ export const manchester = {
     name: 'Manchester',
     children: [],
     parent: 1,
+    linkedFiles: [FaulaDeTomas2]
 }
 
 export const england = {
@@ -21,6 +22,7 @@ export const england = {
     name: 'England',
     children: [london, manchester],
     parent: 10,
+    linkedFiles: [FaulaDeTomas2, MortillaDelAzuer]
 }
 
 export const berlin = {
@@ -49,7 +51,7 @@ export const germany = {
     name: 'Germany',
     children: [berlin, munich, hamburg],
     parent: 10,
-    linkedImages: [
+    linkedFiles: [
         Street1,
         Tower1,
     ]
@@ -92,7 +94,7 @@ export const europe = {
         germany,
         france,
     ],
-    linkedImages: [Church1],
+    linkedFiles: [Church1],
 }
 
 export const entities = [

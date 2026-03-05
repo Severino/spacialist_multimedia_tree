@@ -28,8 +28,30 @@ export default defineConfig({
     resolve: {
         "@": resolve('/src'),
     },
+    server: {
+        // Serve assets directory only in dev server
+        publicDir: 'public',
+        middlewareMode: false,
+        setupMiddlewares: (middlewares, devServer) => {
+            middlewares.use((req, res, next) => {
+                if (req.url.startsWith('/assets/')) {
+                    const fs = require('fs');
+                    const path = require('path');
+                    const assetPath = path.join(devServer.config.root, req.url);
+                    if (!fs.existsSync(assetPath)) {
+                        res.statusCode = 404;
+                        res.end('404 Not Found');
+                        return;
+                    }
+                }
+                next();
+            });
+            return middlewares;
+        },
+    },
     build: {
         sourcemap: true,
+        publicDir: false,
         lib: {
             // We run the 'playground' when using the vite dev server
             // otherwise we build directly using the main.js

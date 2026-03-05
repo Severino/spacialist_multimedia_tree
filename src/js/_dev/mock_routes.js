@@ -23,7 +23,7 @@ export const mockRoutes = {
 
                 if (!filters.linked) return { data: [] };
 
-                const data = mockStores?.entityStore?.getEntity(filters.linked)?.linkedImages || []
+                const data = mockStores?.entityStore?.getEntity(filters.linked)?.linkedFiles || []
 
                 return {
                     data,
@@ -38,10 +38,19 @@ export const mockRoutes = {
 
                 const childCoordinates = [];
                 entity.children.forEach(child => {
+
+                    let coordinates = null;
+                    const storedCoordinates = localStorage.getItem(`multimediatree/coordinates/${child.id}`) // Store the coordinates for this child
+                    if(storedCoordinates) {
+                        coordinates = JSON.parse(storedCoordinates);
+                    } else {
+                        return;
+                    }
+
                     childCoordinates.push({
                         entity_id: child.id,
                         name: child.name,
-                        ...mockCoordinates[child.id]
+                        ...coordinates
                     });
                 });
 

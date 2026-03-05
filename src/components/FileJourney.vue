@@ -28,6 +28,7 @@
             :lock="lock"
             :activeChildId="activeChildId"
             :children="children"
+            @update-active-child="emit('update-active-child', $event)"
             @item-clicked="mount"
         />
         <div v-else>No matching viewer found.</div>

@@ -6,11 +6,10 @@
         >
             {{ parent.name }}
         </button>
-        {{ entity.name }}
         <div class="d-flex">
-            <ImageSelection
+            <FileSelection
                 class="mb-2 flex-grow-1"
-                :images="linkedFiles"
+                :files="linkedFiles"
                 :selectedId="selectedFile?.id ?? null"
                 @update:selected="updateSelectedFile"
             />
@@ -21,7 +20,7 @@
                 @visit-child="setEntity"
             />
         </div>
-        <ImageJourney
+        <FileJourney
             class="flex-grow-1"
             :activeChildId="activeChildId"
             :children="childCoordinates"
@@ -37,8 +36,8 @@
 
     import { computed, onMounted, ref, watch } from 'vue';
     import ChildSelection from './ChildSelection.vue';
-    import ImageJourney from './ImageJourney.vue';
-    import ImageSelection from './ImageSelection.vue';
+    import FileJourney from './FileJourney.vue';
+    import FileSelection from './FileSelection.vue';
 
     const linkedFiles = ref([]);
     const childCoordinates = ref([]);
@@ -81,7 +80,7 @@
         await getJourneyFile();
         await getLinkedFiles();
         await getChildCoordinates();
-    }); 
+    });
 
     const setEntity = (childId) => {
         const entity = SpPS.api.store.entityStore.getEntity(childId) ?? null;
@@ -114,6 +113,7 @@
     }
 
     async function updateChildCoordinates(coordinates) {
+        console.log('Updating child coordinates:', coordinates);
         if (!entity.value?.id || !coordinates.entity_id) return;
 
         const index = childCoordinates.value.findIndex(child => child.entity_id === coordinates.entity_id);
@@ -125,6 +125,8 @@
             // Add new child coordinates
             childCoordinates.value.push(coordinates);
         }
+        localStorage.setItem(`multimediatree/coordinates/${coordinates.entity_id}`, JSON.stringify(coordinates));
+
     }
 
 </script>

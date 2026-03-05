@@ -1,9 +1,16 @@
 <template>
     <div class="position-relative h-100 w-100">
         <div
-        v-if="loading"
-            class="position-absolute top-50 start-50 translate-middle text-red bg-dark bg-opacity-75 px-3 py-2 rounded z-index-1">
-            Loading 3D model <span>{{ progress }}%</span>...
+            v-if="error"
+            class="position-absolute top-50 start-50 translate-middle text-danger bg-dark bg-opacity-75 px-3 py-2 rounded z-index-1"
+        >
+            <span class="fw-bold">Error loading file: </span>{{ error }}
+        </div>
+        <div
+            v-if="loading && !error"
+            class="position-absolute top-50 start-50 translate-middle text-white bg-dark bg-opacity-75 px-3 py-2 rounded z-index-1"
+        >
+            Loading 3D model ... <br><span class="d-block text-center fw-bold">{{ progress }}%</span>
         </div>
         <div
             class="bg-secondary h-100 overflow-hidden"
@@ -32,14 +39,17 @@
 
     const loading = ref(false);
     const progress = ref(0);
-    let controls = null;
-    let camera = null;
+    const error = ref('');
     const container = ref(null);
     const object = ref(null);
+
+    let controls = null;
+    let camera = null;
     let renderer = null;
     let scene = null;
     let raycaster = null;
     let animationId = null;
+    let clickListener = null;
 
     const {
         canvasRef,
@@ -56,26 +66,33 @@
     });
 
     const props = defineProps({
+        activeChildId: Number,
+        lock: Boolean,
+        children: Array,
         item: {
             type: Object,
             required: true
         }
     });
 
-    const emit = defineEmits(['item-clicked']);
+    const emit = defineEmits(['item-clicked', 'update-active-child']);
 
-    onMounted(() => {
+    onMounted(async () => {
         // Initialize Three.js scene
         setupThreeScene();
-        mount();
+        await mount();
     });
 
-    watch(() => props.item, (newItem, oldItem) => {
+    watch(() => props.item, async (newItem, oldItem) => {
         if (newItem !== oldItem) {
             unmount();
-            mount(newItem);
+            await mount(newItem);
         }
     });
+
+    watch(() => props.children, () => {
+        updateChildren();
+    }, { deep: true });
 
     const unmount = async () => {
 
@@ -105,6 +122,49 @@
         raycaster = null;
     }
 
+    function onSceneClick(event) {
+        const raycaster = new THREE.Raycaster();
+
+        const rect = event.target.getBoundingClientRect();
+        const mouse = new THREE.Vector2(
+            ((event.clientX - rect.left) / rect.width) * 2 - 1,
+            -((event.clientY - rect.top) / rect.height) * 2 + 1
+        );
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(scene.children, true);
+        if (intersects.length > 0) {
+            const firstIntersect = intersects[0];
+
+            if (event.altKey) {
+                if (!props.activeChildId) {
+                    console.warn('No active child selected for ALT-click position update');
+                    return;
+                }
+
+                const position = {
+                    x: firstIntersect.point.x,
+                    y: firstIntersect.point.y,
+                    z: firstIntersect.point.z
+                }
+
+                const child = props.children.find(c => c.entity_id === props.activeChildId);
+                console.log(props.children);
+                console.trace('Updating child position with ALT-click:', child, position);
+                emit('update-active-child', {
+                    entity_id: props.activeChildId,
+                    position
+                });
+
+            } else if (firstIntersect.object.target) {
+                const targetChild = props.item.children.find(child => child.name === firstIntersect.object.target);
+                if (targetChild) {
+                    emit('item-clicked', targetChild);
+                }
+            }
+        }
+    }
+
 
     const setupThreeScene = () => {
         try {
@@ -113,6 +173,9 @@
                 console.error('Three.js container not found');
                 return false;
             }
+
+            // Remove existing click listener if any
+            container.value.removeEventListener('click', onSceneClick);
 
             // Clear any existing content
             container.value.innerHTML = '';
@@ -126,7 +189,7 @@
             const containerHeight = container.value.clientHeight || 500;
 
             camera = new THREE.PerspectiveCamera(75, containerWidth / containerHeight, 0.1, 1000);
-            camera.position.set(0, 1.6, 3);
+            camera.position.set(-5, 5, 0.5);
 
             renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(containerWidth, containerHeight);
@@ -143,36 +206,13 @@
             directionalLight.position.set(0, 20, 10);
             scene.add(directionalLight);
 
-            raycaster = new THREE.Raycaster();
 
             // Click handler for 3D scene
-            container.value.addEventListener('click', (event) => {
-
-                const rect = event.target.getBoundingClientRect();
-                const mouse = new THREE.Vector2(
-                    ((event.clientX - rect.left) / rect.width) * 2 - 1,
-                    -((event.clientY - rect.top) / rect.height) * 2 + 1
-                );
-
-                raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObjects(scene.children, true);
-                if (intersects.length > 0) {
-                    const firstIntersect = intersects[0];
-
-                    if (event.altKey) {
-                        copyToClipboard(`position: {x: ${firstIntersect.point.x.toFixed(4)}, y: ${firstIntersect.point.y.toFixed(4)}, z: ${firstIntersect.point.z.toFixed(4)}}`);
-                    } else if (firstIntersect.object.target) {
-                        const targetChild = props.item.children.find(child => child.name === firstIntersect.object.target);
-                        if (targetChild) {
-                            emit('item-clicked', targetChild);
-                        }
-                    }
-                }
-            });
+            container.value.addEventListener('click', onSceneClick);
 
             // Controls
             controls = new OrbitControls(camera, renderer.domElement);
-            controls.target.set(0, 1.6, 0);
+            // controls.target.set(0, 0, 0);
             controls.update();
             return true;
         } catch (error) {
@@ -181,62 +221,89 @@
         }
     };
 
+    const childGeometries = ref([]);
+    const updateChildren = () => {
+        // console.log(childGeometries.value);
+        // Remove old child geometries
+        childGeometries.value.forEach(geom => {
+            geom.removeFromParent();
+        });
+        childGeometries.value = [];
+
+
+        props.children.forEach(child => {
+            // For 3D models, we might want to log the 3D position directly
+            const geometry = new THREE.SphereGeometry(0.1, 16, 16);
+            const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const sphere = new THREE.Mesh(geometry, material);
+            sphere.position.set(child.position.x, child.position.y, child.position.z);
+            sphere.target = child.name; // Store reference to child data
+            scene.add(sphere);
+            childGeometries.value.push(sphere);
+        });
+    }
 
     const mount = async () => {
 
-        loading.value = true;
-        progress.value = 0;
+        try {
+            error.value = '';
+            loading.value = true;
+            progress.value = 0;
 
-        // Set up Three.js scene fresh each time
-        const sceneSetupSuccess = setupThreeScene();
-        if (!sceneSetupSuccess) {
-            console.error('Failed to setup Three.js scene');
-            return;
-        }
 
-        // Load 3D model (assuming GLTF format)
-        const loader = new GLTFLoader();
-        loader.load(
-            props.item.model,
-            function (gltf) {
-                if (!scene) {
-                    console.error('Three.js scene not available');
-                    return;
-                }
+            console.log('Mounting 3D model with item:', props.item);
 
-                const model = gltf.scene;
-                scene.add(model);
-                object.value = model;
-
-                // Add markers for children
-                props.item.children.forEach(child => {
-                    // For 3D models, we might want to log the 3D position directly
-                    const geometry = new THREE.SphereGeometry(0.1, 16, 16);
-                    const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-                    const sphere = new THREE.Mesh(geometry, material);
-                    sphere.position.set(child.position.x, child.position.y, child.position.z);
-                    sphere.target = child.name; // Store reference to child data
-                    scene.add(sphere);
-                });
-
-                // Start animation
-                function animate() {
-                    if (!renderer || !scene || !camera) return;
-                    animationId = requestAnimationFrame(animate);
-                    if (controls) controls.update();
-                    renderer.render(scene, camera);
-                }
-                animate();
+            if (!props.item.url) {
+                error.value = 'No 3D model URL provided';
                 loading.value = false;
-            },
-            function (prog) {
-                progress.value = Math.floor(prog.loaded / prog.total * 100);
-            },
-            function (error) {
-                loading.value = false;
-                console.error('An error happened while loading the 3D model:', error);
+                return;
             }
-        );
+
+            // Set up Three.js scene fresh each time
+            const sceneSetupSuccess = setupThreeScene();
+            if (!sceneSetupSuccess) {
+                error.value = 'Failed to setup 3D scene';
+                loading.value = false;
+                return;
+            }
+
+            // Load 3D model (assuming GLTF format)
+            const loader = new GLTFLoader();
+
+            const gltf = await loader.loadAsync(
+                props.item.url,
+                function (prog) {
+                    progress.value = Math.floor(prog.loaded / prog.total * 100);
+                }
+            );
+
+            if (!scene) {
+                error.value = 'Three.js scene not available';
+                loading.value = false;
+                return;
+            }
+
+            const model = gltf.scene;
+
+            scene.add(model);
+            object.value = model;
+
+            updateChildren();
+
+            // Start animation
+            function animate() {
+                if (!renderer || !scene || !camera) return;
+                animationId = requestAnimationFrame(animate);
+                if (controls) controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+            loading.value = false;
+        } catch (err) {
+            error.value = 'Failed to load 3D model: ' + err.message;
+            console.error('Failed to load 3D model:', err);
+            loading.value = false;
+        }
     };
 
 </script>
