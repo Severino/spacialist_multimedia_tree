@@ -48,16 +48,38 @@ export const MortillaDelAzuer = {
     attribution: 'Avatar of GlobalDigitalHeritage Global Digital Heritage and GDH-Afrik'
 }
 
+export const GoetheOBJ = {
+    id: 103,
+    name: "Goethe OBJ",
+    category: '3d',
+    url: 'assets/goethe/source/germanisches-nationalmuseum-goethe-meshmixer.obj',
+}
 
+export const BenchySTL = {
+    id: 104,
+    name: "Benchy STL",
+    category: '3d',
+    url: 'assets/benchy/benchy.stl',
+}
+
+export const MonkeyFBX = {
+    id: 105,
+    name: "the_monkey_3d_object_from_blender_exported_as_fbx",
+    category: '3d',
+    url: 'assets/monkey.fbx',
+}
 
 export const mockFiles = [
-    Church1,
+    BenchySTL,
     Bridge1,
+    Church1,
+    FaulaDeTomas2,
+    GoetheOBJ,
+    MonkeyFBX,
+    MortillaDelAzuer,
     Street1,
     Tower1,
-    FaulaDeTomas2,
-    MortillaDelAzuer
-]
+];
 
 export const mockFilesMap = mockFiles.reduce((map, file) => {
     map[file.id] = file;

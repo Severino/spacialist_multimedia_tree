@@ -18,13 +18,13 @@
 
     const props = defineProps({
         activeChildId: Number | null,
-        lock: Boolean,
+        childEntities: Array,
+        childCoordinates: Array,
         item: {
             type: Object,
             required: true
         },
-        childEntities: Array,
-        childCoordinates: Array,
+        lock: Boolean,
     });
 
 
@@ -214,7 +214,7 @@
             }
 
             image.value.on('mousedown', (event) => {
-                if (props.activeChildId && event.e.altKey) {
+                if (props.activeChildId && event.e.ctrlKey) {
                     event.e.preventDefault();
                     // Ctrl + click to get coordinates
                     const scenePosition = event.scenePoint;

@@ -21,6 +21,7 @@ class CreateJourneyFileSelect extends Migration
             // (With the downsode that we need to maintain it when the entity changes)
             $table->unsignedBigInteger('file_id');
             $table->unsignedBigInteger('entity_id')->unique();
+            $table->boolean('locked')->default(false);
             $table->timestamps();
 
             $table->foreign('file_id')->references('id')->on('files')->onDelete('cascade')->onUpdate('cascade');

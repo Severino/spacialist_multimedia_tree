@@ -1,15 +1,36 @@
 <template>
-    <div class="w-100">
-        <b>Linked Files</b>
+    <div
+        class="w-100 border border-2 border-dark-subtle rounded p-2 pt-0"
+        :class="{ 'opacity-50': locked }"
+    >
+        <header class="d-flex pt-1 justify-content-between align-items-center">
+            <b class="text-dark-emphasis">Linked Files {{ selectedId }}</b>
+            <div
+                class="btn btn-sm btn-secondary-outline"
+                @click="() => emit('toggle-locked', !locked)"
+            >
+                <FontAwesomeIcon
+                    v-if="locked"
+                    :icon="faLock"
+                />
+                <FontAwesomeIcon
+                    v-else
+                    :icon="faUnlock"
+                />
+            </div>
+        </header>
 
-        <div class="d-flex gap-2 overflow-x-auto p-2 w-100">
+        <div
+            v-if="!locked"
+            class="d-flex gap-2 overflow-x-auto p-2 w-100"
+        >
             <input
                 name="mmt-file-selection"
                 id="none"
                 type="radio"
                 value=""
                 :checked="isSelected(null)"
-                @change="(event) => emit('update:selected', event.target.value)"
+                @change="(event) => emit('update:selected', null)"
             >
             <label
                 class="d-flex align-items-center justify-content-center file-select"
@@ -41,12 +62,16 @@
                     >
                     <div
                         v-else-if="file.category === '3d'"
-                        class="d-flex flex-column align-items-center justify-content-center"
+                        class="d-flex flex-column align-items-center justify-content-center p-2 overflow-hidden"
                         style="width: 100%; height: 100%; background-color: #eee; font-weight: bold;"
                     >
 
-                        <FontAwesomeIcon :icon="faCube" size="2x" class="mb-2" />
-                        <span>{{ file.name ?? "N / A" }}</span>
+                        <FontAwesomeIcon
+                            :icon="faCube"
+                            size="2x"
+                            class="mb-2"
+                        />
+                        <span class="file-name-3d text-break w-100 text-center">{{ file.name ?? "N / A" }}</span>
                     </div>
                 </label>
             </template>
@@ -56,13 +81,16 @@
 </template>
 
 <script setup>
-import { faCube } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-
+    import { faCube, faLock, faUnlock } from '@fortawesome/free-solid-svg-icons';
+    import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
     const props = defineProps({
         files: {
             type: Array,
+            required: true,
+        },
+        locked: {
+            type: Boolean,
             required: true,
         },
         selectedId: {
@@ -71,7 +99,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
         },
     });
 
-    const emit = defineEmits(['update:selected']);
+    const emit = defineEmits(['update:selected', 'toggle-locked']);
 
     const isSelected = function (id) {
         return props.selectedId === id;
@@ -85,6 +113,14 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
         display: none;
     }
 
+    .file-name-3d {
+        font-size: 0.75rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
     .file-select {
         cursor: pointer;
         user-select: none;
@@ -94,7 +130,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
         box-sizing: border-box;
 
         height: 128px;
-        width: 256px;
+        width: 128px;
         flex-shrink: 0;
         transform: scale(1);
 

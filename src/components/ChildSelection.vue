@@ -1,6 +1,6 @@
 <template>
     <div class="child-selection h-100 overflow-auto">
-        <b>Active Child Entity</b>
+        <b class="mb-1">Active Child Entity</b>
         <ul class="d-flex flex-column gap-1">
             <li>
                 <input
@@ -12,6 +12,7 @@
                 <label
                     for="mmt-child-selection-unselected"
                     :class="getButtonClassFor(null)"
+                    class="w-100"
                 >None</label>
             </li>
 
@@ -30,7 +31,10 @@
                         :for="'mmt-child-selection-' + child.id"
                         :class="getButtonClassFor(child.id)"
                     >{{ child.name }}</label>
-                    <button class="btn btn-outline-secondary flex-grow-0" @click="$emit('visit-child', child.id)">
+                    <button
+                        class="btn btn-outline-secondary flex-grow-0"
+                        @click="$emit('visit-child', child.id)"
+                    >
                         ⭷
                     </button>
                 </div>
@@ -58,7 +62,7 @@
             'text-truncate'
         ]
 
-        if(activeChild.value === id) {
+        if (activeChild.value === id) {
             classes.push('btn-primary');
         } else {
             classes.push('btn-outline-secondary');

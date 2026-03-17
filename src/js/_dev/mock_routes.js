@@ -81,12 +81,12 @@ export const mockRoutes = {
                     localStorage.removeItem(`multimediatree/journey_file/${id}`);
                 }
 
-                return mockFilesMap[file_id] || null; // Ensure there's a file for this ID
+                return { file_id: id, file: mockFilesMap[file_id] } || null; // Ensure there's a file for this ID
             }
 
             if (method === 'get') {
                 const file_id = localStorage.getItem(`multimediatree/journey_file/${id}`) || null;
-                return mockFilesMap[file_id] || null; // Ensure there's a file for this ID
+                return { file_id, file: mockFilesMap[file_id] } || null; // Ensure there's a file for this ID
             }
         }
 

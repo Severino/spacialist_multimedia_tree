@@ -1,5 +1,5 @@
 import { reactive } from "vue"
-import { Church1, FaulaDeTomas2, MortillaDelAzuer, Street1, Tower1 } from "./mock_files"
+import { BenchySTL, Church1, FaulaDeTomas2, GoetheOBJ, MonkeyFBX, MortillaDelAzuer, Street1, Tower1 } from "./mock_files"
 
 export const london = {
     id: 11,
@@ -83,6 +83,7 @@ export const france = {
     name: 'France',
     children: [lyon, paris, marseille],
     parent: 10,
+    linkedFiles: [GoetheOBJ, BenchySTL, MonkeyFBX],
 }
 
 
@@ -126,6 +127,14 @@ export const mockStores = {
         set(entity) {
             this.selectedEntity = entity;
             localStorage.setItem('selectedEntity', JSON.stringify(entity));
+        },
+        fetchChildren(entity) {
+            console.log(arguments);
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    resolve(entity.children);
+                }, 500);
+            });
         }
     }),
 

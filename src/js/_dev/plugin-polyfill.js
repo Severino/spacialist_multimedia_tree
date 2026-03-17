@@ -3,11 +3,12 @@ import { mockRoutes } from './mock_routes';
 import { mockStores } from './mock_stores';
 import router from './router';
 import { useAppStore } from './store';
+
 /** 
  * Polyfill for the SpPS plugin system.
  */
 export function createPluginPolyfill() {
-    
+
     let componentRouteAdded = false;
     let componentRoute = {
         path: `/component`,
@@ -21,13 +22,30 @@ export function createPluginPolyfill() {
             store: mockStores,
             http: (method, url, data) => mockRoutes.http(method, url, data),
         },
-        register: ({ id, i18n, routes, store }) => { },
-        registerI18n: (id, i18n) => { },
+        data: {
+            t: window.i18n.global.t,
+        },
+        register: ({ id, i18n, routes, store }) => {
+            window.SpPS.registerI18n(id, i18n);
+        },
+        registerI18n: (id, i18n) => {
+            const languages = Object.keys(i18n);
+            for (const lang of languages) {
+                // Build per-locale messages under the `plugin` namespace
+                const localeMessages = { plugin: i18n[lang] };
+
+
+                window.i18n.global.messages[lang] = localeMessages;
+
+            }
+
+            console.log(window.i18n.global.messages.en);
+        },
         registerComponent: (componentDefinition) => {
             const store = useAppStore();
             store.registerComponent(componentDefinition);
 
-            if(!componentRouteAdded){
+            if (!componentRouteAdded) {
                 router.addRoute(componentRoute);
                 componentRouteAdded = true;
             }
@@ -49,7 +67,7 @@ export function createPluginPolyfill() {
                 }
             };
             routes.forEach(route => {
-                if(!route.component) {
+                if (!route.component) {
                     console.error(`Route ${route.path} does not have a component.`);
                     return;
                 }
@@ -78,7 +96,7 @@ export function createPluginPolyfill() {
         }) => {
             const store = useAppStore();
 
-            if(slot == 'tab') {
+            if (slot == 'tab') {
                 const tab = {
                     id: key,
                     of: of,
@@ -90,7 +108,7 @@ export function createPluginPolyfill() {
                     props: props,
                 };
                 store.addTab(tab);
-            } else if(slot == 'tools' || slot == 'settings') {
+            } else if (slot == 'tools' || slot == 'settings') {
                 const item = {
                     id: key,
                     of: of,

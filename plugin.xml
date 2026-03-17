@@ -4,7 +4,7 @@
     <name>MultimediaTree</name>
     <title>Multimedia Tree Plugin</title>
     <description>Plugin to allow a visual navigation in the project using images, maps and 3D objects.</description>
-    <version>1.0.0</version>
+    <version>0.1.0</version>
     <licence>MIT</licence>
     <authors>
         <author>Severin Opel</author>
@@ -18,6 +18,7 @@
     </migrations>
     <dependencies>
         <!-- Other plugins this plugin depends on -->
+         <file />
     </dependencies>
     <permissions>
         <!-- Other requirements this plugin depends on -->
@@ -25,15 +26,13 @@
         <!-- <migration /> -->
         <!-- <routes /> -->
         <!-- <public /> -->
-        <attributes />
-        <components />
+        <!-- <attributes /> -->
+        <!-- <components /> -->
     </permissions>
     <attributes>
         <!-- Attribute names must start with their plugin name -->
-        <!-- <attribute type="attribute" src="Attributes\TemplateAttribute" /> -->
     </attributes>
     <components>
         <!-- Attribute names must start with their plugin name -->
-        <!-- <component name="TemplateAttribute" src="src/components/Attribute.vue" /> -->
     </components>
 </info>

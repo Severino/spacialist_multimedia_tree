@@ -1,18 +1,9 @@
 <template>
-    <div class="canvas-container h-100">
-        <!-- 
-        <div class="breadcrumbs">
-            <a href="/">HOME</a>
-            <template
-                v-for="value in parts"
-                :key="value.path"
-            >
-                <span> > </span>
-                <a :href="'/?path=' + value.path">{{ value.name }}</a>
-            </template>
-
-</div> -->
-        <div v-if="!file">No active item selected.</div>
+    <div class="canvas-container h-100 bg-light position-relative">
+        <div
+            v-if="!file"
+            class="position-absolute top-50 start-50 translate-middle"
+        >{{ t("error.no_file") }}</div>
         <ImageViewer
             v-else-if="file.category === 'image'"
             :item="file"
@@ -33,7 +24,10 @@
             @update-active-child="emit('update-active-child', $event)"
             @item-clicked="mount"
         />
-        <div v-else>No matching viewer found.</div>
+        <div
+            class="position-absolute top-50 start-50 translate-middle"
+            v-else
+        >{{ t("error.invalid_viewer") }}</div>
     </div>
 </template>
 
@@ -42,15 +36,16 @@
 
     import ImageViewer from './ImageViewer.vue';
     import ThreeDeeViewer from './ThreeDeeViewer.vue';
+    import { t } from '../utils/plugin';
 
     const path = ref('');
 
     const props = defineProps({
         activeChildId: Number,
-        lock: Boolean,
-        file: Object,
         childCoordinates: Array,
         childEntities: Array,
+        file: Object,
+        lock: Boolean,
     });
 
     const emit = defineEmits(['select-child', 'update-active-child']);

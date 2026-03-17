@@ -1,3 +1,9 @@
 {
-    "attribute_name": "Template Attribute"
+    "prompt": {
+        "select_entity_for_changes": "Select an entity to make edits."
+    },
+    "error": {
+        "invalid_viewer": "No matching viewer found.",
+        "no_file": "No file associated with this item."
+    }
 }

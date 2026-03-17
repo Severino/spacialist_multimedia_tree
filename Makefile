@@ -3,8 +3,8 @@ lib_dir=./lib
 dst_dir=./dist
 build_dir=./build
 build_src=./build/src
-package_name=$(shell node -p -e "require('./package.json').name")
-package_root=$(shell node -p -e "require('./package.json').pluginName")
+package_name=$(shell node doctor.js -P)
+package_root=$(shell node doctor.js -x name)
 
 # all steps for an appstore release
 release: npm_init npm_build package

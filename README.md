@@ -1,16 +1,13 @@
-# Spacialist Plugin Template
+# Multimedia Tree
 
-This template is meant as a starting point for Plugin Development. It is setup to work out of the box with spacialist and has a lot of developer tooling already setup, so that you don't have to setup anything on your own and you can start developing right away.
+This plugin adds functionality to the file plugin.
+Allowing users to place child elements onto images of 3D Files of it's parent.
+This allows the users to navigate the entity tree solely by clicking on 
+graphics to move to the next entity. Creating a more immersive user experience
+and make the data easier to explore for non-expert users.
 
-## Setup for Development
+## Example
 
-To setup the plugin to be ready for development follow these steps:
-
-1. Clone this repository into the spacialist plugin folder `app/Plugins`
-2. Install node modules `npm install`
-2. Run the setup script `node dev.mjs` **Note using windows you must open the shell as administrator**
-2. Run spacialist and the plugin. Most easily done by running the 'dev' task from vscode.
-2. Enable plugin in spacialist.
-2. Develop!
-
-
+If you have a excavation site and you know where you found the single items, then you can
+place points a point for each item onto the image. When clicking those points you get to the
+respective entity of the item you just clicked.

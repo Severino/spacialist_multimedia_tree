@@ -1,3 +1,9 @@
 {
-    "attribute_name": "Vorlagenattribut"
+    "prompt": {
+        "select_entity_for_changes": "Wähle eine Entität aus, um Änderungen vorzunehmen."
+    },
+    "error": {
+        "invalid_viewer": "Kein passender Viewer gefunden.",
+        "no_file": "Keine Dateien sind diesem Element verknüpft."
+    }
 }

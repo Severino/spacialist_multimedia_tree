@@ -19,7 +19,7 @@ let packageJson = null;
 let manifest = null;
 let db = null;
 const legacyInfoPath = join('App', 'info.xml');
-const infoName = 'manifest.xml';
+const infoName = 'plugin.xml';
 const infoPath = join(infoName);
 
 
@@ -38,6 +38,16 @@ const availableOptions = {
         arguments: ['-d', '--db'],
         description: 'Check the database connection',
         callback: callDatabase
+    },
+    xml: {
+        arguments: ['-x', '--xml'],
+        description: "Get's a value from the manifest file",
+        callback: callGetManifestValue
+    },
+    packageName: {
+        arguments: ['-P', '--package-name'],
+        description: "Get's a file-friendly package name from the manifest file.",
+        callback: callGetPackageName
     },
     help: {
         arguments: ['-h', '--help'],
@@ -105,6 +115,7 @@ async function main() {
         unknownArguments,
         duplicateArguments,
         options,
+        pathArguments,
     } = parseOptions();
 
     if (errors || Object.keys(options).length > 1) {
@@ -123,7 +134,8 @@ async function main() {
         return;
     }
 
-    await Object.values(options)[0].callback();
+    console
+    await Object.values(options)[0].callback(pathArguments);
 }
 
 /**
@@ -159,6 +171,85 @@ Datbase name: ${DB_DATABASE}
         error(`Could not read the environment variables: ${e.message}`);
         return;
     }
+}
+
+/**
+ * ================  Call the manifest function  ========================
+ * This function is used to retrieve values at a path of the manifest file (plugin.xml).
+ * It was primarily introduced to easily retrieve the plugin name for the Makefile.  
+*/
+
+async function callGetManifestValue(pathArgs) {
+
+    if (pathArgs.length > 1) {
+        error('Too many arguments passed.');
+        return;
+    }
+
+    if (pathArgs.length === 0) {
+        error(`Retrives a value for a given path from the "${infoName}" file. You must pass the key as an argument (may be paths separated with '/'). For example: "node doctor.js -x version"`);
+        return;
+    }
+
+    if (!pathArgs[0]) {
+        error('No key passed as an argument.');
+        return;
+    }
+
+    let xmlAttribute = null;
+    try {
+        const manifest = await useManifest();
+        xmlAttribute = manifest?.info;
+    } catch (e) {
+        error(`Manifest file not found: ${e.message}`);
+        return;
+    }
+
+    if (!xmlAttribute) {
+        throw new Error('Manifest file does not contain an "info" object.');
+    }
+
+    const parts = pathArgs[0].split('/')
+    while (parts.length > 0) {
+        const part = parts.shift();
+        if (xmlAttribute[part]) {
+            xmlAttribute = xmlAttribute[part];
+        } else {
+            error(`Key "${part}" not found in manifest file.`);
+            return;
+        }
+    }
+    // As we need this for the Makefile, we only print the value without any formatting. So we can easily use it in the Makefile.
+    console.log(xmlAttribute);
+}
+
+/**
+ * ================  Call the manifest function  ========================
+ * This function is used to retrieve values at file-friendly package name from the manifest file (plugin.xml).
+ * It was primarily introduced to easily retrieve the package name for the Makefile.  
+*/
+async function callGetPackageName(pathArgs) {
+
+    if (pathArgs.length > 0) {
+        error('This option does not take any arguments.');
+        return;
+    }
+
+    let name = null;
+    try {
+        const manifest = await useManifest();
+        name = manifest?.info?.name;
+
+        if (!name) {
+            throw new Error('Could not find the plugin name in the manifest file.');
+        }
+    } catch (e) {
+        error(`Manifest file not found: ${e.message}`);
+        return;
+    }
+
+    name = name.toLowerCase().replace(/\s+/g, '_');
+    console.log(name);
 }
 
 /**
@@ -292,7 +383,7 @@ async function callMakeMigration() {
     const filePath = join(migrationsDir, fileName);
     const migrationClassName = migrationName.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
 
-    const {pluginName} = await getPackageJsonValues();
+    const { pluginName } = await getPackageJsonValues();
 
     await fs.writeFile(filePath, `<?php
 
@@ -760,8 +851,14 @@ function parseOptions() {
     const duplicateArguments = [];
     const unknownArguments = [];
     const allAvailableOptionArguments = {};
+    const pathArguments = [];
 
     passedArguments.forEach((argument) => {
+        if (!argument.startsWith('-')) {
+            pathArguments.push(argument);
+            return;
+        }
+
         const optionName = getOptionsNameByArgument(argument);
         if (optionName === null) {
             unknownArguments.push(argument);
@@ -780,6 +877,7 @@ function parseOptions() {
         unknownArguments,
         duplicateArguments,
         options: allAvailableOptionArguments,
+        pathArguments,
     };
 }
 

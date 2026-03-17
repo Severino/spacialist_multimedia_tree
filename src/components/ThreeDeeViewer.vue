@@ -33,9 +33,9 @@
 <script setup>
     import { onMounted, ref, watch } from 'vue';
     import * as THREE from 'three';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { useCanvas } from '../composables/canvas-viewer';
+    import { univeralLoader } from '../utils/3d';
 
     const loading = ref(false);
     const progress = ref(0);
@@ -90,13 +90,17 @@
         }
     });
 
-    watch(() => props.childCoordinates, () => {
+    const update = async () => {
         updateChildren();
+    }
+
+    watch(() => props.childCoordinates, async () => {
+        await update();
     }, { deep: true });
 
-    watch(() => props.activeChildId, () => {
-        updateChildren();
-     });
+    watch(() => props.activeChildId, async () => {
+        await update();
+    });
 
     const unmount = async () => {
 
@@ -140,9 +144,9 @@
         if (intersects.length > 0) {
             const firstIntersect = intersects[0];
 
-            if (event.altKey) {
+            if (event.ctrlKey) {
                 if (!props.activeChildId) {
-                    console.warn('No active child selected for ALT-click position update');
+                    console.warn('No active child selected for CTRL-click position update');
                     return;
                 }
 
@@ -152,10 +156,9 @@
                     z: firstIntersect.point.z
                 }
 
-                const child = props.childCoordinates.find(c => c.entity_id === props.activeChildId);
+                // const child = props.childCoordinates.find(c => c.entity_id === props.activeChildId);
                 emit('update-active-child', {
                     entity_id: props.activeChildId,
-                    parent_id: props.item.id,
                     ...position
                 });
 
@@ -197,18 +200,34 @@
             renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(containerWidth, containerHeight);
             renderer.setClearColor(0x000000, 0);
+            // Enable shadows and correct light response
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.physicallyCorrectLights = true;
+            renderer.outputEncoding = THREE.sRGBEncoding;
 
             container.value.appendChild(renderer.domElement);
 
-            // Lighting
-            const light = new THREE.HemisphereLight(0xffffff, 0x444444);
-            light.position.set(0, 20, 0);
-            scene.add(light);
-
-            const directionalLight = new THREE.DirectionalLight(0xffffff);
-            directionalLight.position.set(0, 20, 10);
+            // Unidirectional lighting (strong directional light + soft ambient fill)
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            directionalLight.position.set(5, 10, 7.5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            const d = 20;
+            directionalLight.shadow.camera.left = -d;
+            directionalLight.shadow.camera.right = d;
+            directionalLight.shadow.camera.top = d;
+            directionalLight.shadow.camera.bottom = -d;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 100;
+            directionalLight.shadow.bias = -0.0005;
             scene.add(directionalLight);
 
+            // Low-intensity ambient to lift dark areas while keeping directional look
+            const ambient = new THREE.AmbientLight(0xffffff, 0.16);
+            scene.add(ambient);
+            
 
             // Click handler for 3D scene
             container.value.addEventListener('click', onSceneClick);
@@ -223,6 +242,39 @@
             return false;
         }
     };
+
+    // Helper to enable shadows on a loaded object (walks children)
+    function enableShadowsForObject(obj) {
+        if (!obj || !obj.traverse) return;
+        obj.traverse(child => {
+            if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+            }
+        });
+    }
+
+    // Ensure AO maps work: copy UV -> uv2 when necessary and enable aoMapIntensity
+    function applyAoMap(obj) {
+        if (!obj || !obj.traverse) return;
+        obj.traverse(child => {
+            if (!child.isMesh) return;
+
+            const geom = child.geometry;
+            if (geom && !geom.attributes.uv2 && geom.attributes.uv) {
+                geom.setAttribute('uv2', geom.attributes.uv);
+            }
+
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(mat => {
+                if (!mat) return;
+                if (mat.aoMap) {
+                    if (typeof mat.aoMapIntensity === 'undefined') mat.aoMapIntensity = 1.0;
+                    mat.needsUpdate = true;
+                }
+            });
+        });
+    }
 
     const childGeometries = ref([]);
     const updateChildren = () => {
@@ -239,10 +291,12 @@
         props.childCoordinates.forEach(child => {
             // For 3D models, we might want to log the 3D position directly
             const geometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
-            const material = new THREE.MeshBasicMaterial({ color:  child.entity_id === props.activeChildId ? 0x0000ff : 0xff0000 });
+            const material = new THREE.MeshStandardMaterial({ color: child.entity_id === props.activeChildId ? 0x0000ff : 0xff0000 });
             const sphere = new THREE.Mesh(geometry, material);
             sphere.position.set(child.x, child.y, child.z);
             sphere.target = child.name; // Store reference to child data
+            sphere.castShadow = true;
+            sphere.receiveShadow = true;
             scene.add(sphere);
             childGeometries.value.push(sphere);
         });
@@ -254,9 +308,6 @@
             error.value = '';
             loading.value = true;
             progress.value = 0;
-
-
-            console.log('Mounting 3D model with item:', props.item);
 
             if (!props.item.url) {
                 error.value = 'No 3D model URL provided';
@@ -272,25 +323,19 @@
                 return;
             }
 
-            // Load 3D model (assuming GLTF format)
-            const loader = new GLTFLoader();
-
-            const gltf = await loader.loadAsync(
-                props.item.url,
-                function (prog) {
-                    progress.value = Math.floor(prog.loaded / prog.total * 100);
-                }
-            );
-
             if (!scene) {
                 error.value = 'Three.js scene not available';
                 loading.value = false;
                 return;
             }
 
-            const model = gltf.scene;
+            const model = await univeralLoader(props.item.url, progress);
 
             scene.add(model);
+            // Ensure loaded model meshes cast and receive shadows
+            enableShadowsForObject(model);
+            // Apply ao map support (copy UV->uv2 and enable intensity) when present
+            applyAoMap(model);
             object.value = model;
 
 

@@ -8,4 +8,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::put('/journey_file/{entity}', 'MultimediaTreeController@setEntityFile');
     Route::put('/coordinates/{entity}', 'MultimediaTreeController@setChildCoordinates');
+    Route::put('/journey_file/{entity}/lock', 'MultimediaTreeController@setLocked');
+
+    Route::delete('/journey_file/{entity}', 'MultimediaTreeController@unsetEntityFile');
 });
