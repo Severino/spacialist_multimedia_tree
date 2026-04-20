@@ -49,7 +49,7 @@
 
 <script setup>
 
-    import { computed, onMounted, ref, watch } from 'vue';
+    import { computed, onActivated, onMounted, ref, watch } from 'vue';
     import { Alert } from "dhc-components";
     import ChildSelection from './ChildSelection.vue';
     import FileJourney from './FileJourney.vue';
@@ -122,6 +122,11 @@
 
     onMounted(async () => {
         await update();
+    });
+
+    onActivated(async (to, from, next) => {
+        await update();
+        next();
     });
 
     const setEntity = (childId) => {

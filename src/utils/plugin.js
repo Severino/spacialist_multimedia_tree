@@ -8,6 +8,5 @@ export const t = (key, global = false) => {
         return key;
     }
 
-    console.log(key);
     return SpPS.data.t(key);
 }
