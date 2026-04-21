@@ -7,7 +7,12 @@
             :message="t('prompt.select_entity_for_changes')"
         />
         <template v-else>
-            <div class="d-flex">
+            <button
+                class="btn btn-sm btn-outline-secondary mb-2"
+                @click="updateSelectedFile(selectedFile, !useMap)"
+            >Map</button>
+            <div class="d-flex" v-if="!useMap">
+            
                 <FileSelection
                     class="mb-2 flex-grow-1"
                     :locked="fileLocked"
@@ -25,6 +30,7 @@
                     :child-entities="childEntities"
                     :file="selectedFile"
                     :lock="true"
+                    :useMap="useMap"
                     @update-active-child="updateChildCoordinates"
                     @select-child="(item) => activeChildId = item.entity_id"
                 />
@@ -35,7 +41,9 @@
                     <ChildSelection
                         v-model="activeChildId"
                         :children="childEntities"
+                        :hasParent="!!entity?.parent"
                         @visit-child="setEntity"
+                        @visit-parent="setEntityToParent"
                     />
                 </div>
             </div>
@@ -62,12 +70,14 @@
     const childCoordinates = ref([]);
     const selectedFile = ref(null);
     const activeChildId = ref(null);
+    const useMap = ref(false);
 
     async function getJourneyFile() {
         activeChildId.value = null;
         if (entity.value?.id) {
             const url = `multimediatree/journey_file/${entity.value.id}`;
             const response = await SpPS.api.http("get", url);
+            useMap.value = response?.is_map ?? false;
             selectedFile.value = response?.file?.id ? response.file : null;
             fileLocked.value = response?.locked ?? false;
         } else {
@@ -89,13 +99,15 @@
         }
     }
 
-    const updateSelectedFile = async (imageId) => {
+    const updateSelectedFile = async (imageId, isMap = false) => {
+        console.log("Updating selected file to:", imageId, "isMap:", isMap);
         if (!entity.value?.id) return;
 
-        const operation = imageId === null ? "delete" : "put";
+        useMap.value = isMap;
+        const operation = imageId === null && isMap === false ? "delete" : "put";
 
         const url = `multimediatree/journey_file/${entity.value.id}`;
-        const response = await SpPS.api.http(operation, url, { file_id: imageId });
+        const response = await SpPS.api.http(operation, url, { file_id: imageId, is_map: isMap });
         selectedFile.value = response?.file ? response.file : null;
     };
 
@@ -129,10 +141,17 @@
         next();
     });
 
-    const setEntity = (childId) => {
+    function setEntity (childId) {
         const entity = SpPS.api.store.entityStore.getEntity(childId) ?? null;
         SpPS.api.store.entityStore.set(entity)
     };
+
+    function setEntityToParent() {
+        if(entity.value.parent){
+            const parentEntity = SpPS.api.store.entityStore.getEntity(entity.value.parent) ?? null;
+            SpPS.api.store.entityStore.set(parentEntity)
+        }
+    }
 
     const entity = computed(() => {
         return SpPS.api.store.entityStore.selectedEntity;
@@ -153,6 +172,9 @@
     }
 
     async function updateChildCoordinates(coordinates) {
+
+        console.log("Updating child coordinates:", coordinates);
+
         if (!entity.value?.id || !coordinates.entity_id) return;
 
         error.value = '';

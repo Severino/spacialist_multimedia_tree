@@ -70,10 +70,12 @@ export const mockRoutes = {
 
             if (method === 'put') {
                 const file_id = data?.file_id;
+                const is_map = data?.is_map ?? false;
                 if (file_id) {
                     localStorage.setItem(`multimediatree/journey_file/${id}`, file_id);
+                    localStorage.setItem(`multimediatree/journey_file/${id}/map`, is_map);
 
-                    if (!mockFilesMap[file_id]) {
+                    if (!mockFilesMap[file_id] && !is_map) {
                         console.error(`File with ID ${file_id} not found in mock files.`);
                     }
 
@@ -85,12 +87,18 @@ export const mockRoutes = {
             }
 
             if (method === 'get') {
-                const file_id = localStorage.getItem(`multimediatree/journey_file/${id}`) || null;
-                return { file_id, file: mockFilesMap[file_id] } || null; // Ensure there's a file for this ID
+                const file_id = localStorage.getItem(`multimediatree/journey_file/${id}`) ?? null;
+                const is_map = localStorage.getItem(`multimediatree/journey_file/${id}/map`) ?? false;
+                return { file_id, file: mockFilesMap[file_id], is_map: is_map === 'true' } || null; // Ensure there's a file for this ID
+            }
+
+            if(method === 'delete') {
+                localStorage.removeItem(`multimediatree/journey_file/${id}`);
+                return {file_id: null, file: null, is_map: false};
             }
         }
 
-        console.error(`Route ${url} not found in mock routes.`);
+        console.error(`Route ${method}::${url} not found in mock routes.`);
         return null;
     }
 }

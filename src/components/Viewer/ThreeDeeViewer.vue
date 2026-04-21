@@ -34,8 +34,9 @@
     import { onMounted, ref, watch } from 'vue';
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { useCanvas } from '../composables/canvas-viewer';
-    import { univeralLoader } from '../utils/3d';
+    import { useCanvas } from '../../composables/canvas-viewer';
+    import { univeralLoader } from '../../utils/3d';
+import { getActiveFillColor, getFillColor } from '../../utils/styler';
 
     const loading = ref(false);
     const progress = ref(0);
@@ -225,7 +226,7 @@
             scene.add(directionalLight);
 
             // Low-intensity ambient to lift dark areas while keeping directional look
-            const ambient = new THREE.AmbientLight(0xffffff, 0.16);
+            const ambient = new THREE.AmbientLight(0xffffff, 0.3);
             scene.add(ambient);
             
 
@@ -291,7 +292,7 @@
         props.childCoordinates.forEach(child => {
             // For 3D models, we might want to log the 3D position directly
             const geometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
-            const material = new THREE.MeshStandardMaterial({ color: child.entity_id === props.activeChildId ? 0x0000ff : 0xff0000 });
+            const material = new THREE.MeshStandardMaterial({ color: child.entity_id === props.activeChildId ? getActiveFillColor(child.entity_id).hex() : getFillColor(child.entity_id).hex() });
             const sphere = new THREE.Mesh(geometry, material);
             sphere.position.set(child.x, child.y, child.z);
             sphere.target = child.name; // Store reference to child data

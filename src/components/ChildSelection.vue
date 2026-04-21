@@ -1,6 +1,15 @@
 <template>
     <div class="child-selection h-100 overflow-auto">
-        <b class="mb-1">Active Child Entity</b>
+        <header class="d-flex justify-content-between mb-2">
+            <b class="mb-1">Active Child Entity</b>
+            <button
+                v-if="hasParent"
+                @click="emit('visit-parent')"
+                class="btn btn-sm btn-outline-secondary"
+            >
+                ↑
+            </button>
+        </header>
         <ul class="d-flex flex-column gap-1">
             <li>
                 <input
@@ -41,6 +50,27 @@
             </li>
         </ul>
     </div>
+    <footer
+        class="text-muted"
+        style="font-size: 0.75rem;"
+    >
+        <table>
+            <tbody>
+                <tr>
+                    <td class="text-end">[ Click ]</td>
+                    <td>Set element active</td>
+                </tr>
+                <tr>
+                    <td class="text-end">[ Ctrl + Click ]</td>
+                    <td>Set new position</td>
+                </tr>
+                <tr>
+                    <td class="text-end">[ Alt + Click ]</td>
+                    <td>Open entity</td>
+                </tr>
+            </tbody>             
+        </table>
+    </footer>
 </template>
 
 <script setup>
@@ -48,10 +78,11 @@
 
     const activeChild = defineModel();
 
-    const emit = defineEmits(['visit-child']);
+    const emit = defineEmits(['visit-child', 'visit-parent']);
 
     defineProps({
         children: Array,
+        hasParent: Boolean,
     });
 
     const getButtonClassFor = (id) => {

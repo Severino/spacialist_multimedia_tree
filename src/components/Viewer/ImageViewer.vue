@@ -11,7 +11,7 @@
 
 <script setup>
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { useCanvas } from '../composables/canvas-viewer';
+    import { useCanvas } from '../../composables/canvas-viewer';
     import { Canvas, Circle, FabricImage, Point, FabricText as Text } from 'fabric';
 
     const emit = defineEmits(['item-clicked', 'update-active-child']);
