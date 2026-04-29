@@ -9,20 +9,21 @@
 <script setup>
     import Map from 'ol/Map';
     import View from 'ol/View';
+    import { defaults as defaultInteractions } from 'ol/interaction';
     import TileLayer from 'ol/layer/Tile';
     import XYZ from 'ol/source/XYZ';
     import VectorLayer from 'ol/layer/Vector';
     import VectorSource from 'ol/source/Vector';
     import Feature from 'ol/Feature';
     import Point from 'ol/geom/Point';
-    import { Style, Fill, Stroke, Circle as StyleCircle } from 'ol/style';
+    import { Style, Fill, Stroke, Circle as StyleCircle, Text } from 'ol/style';
 
     import { nextTick, onMounted, watch } from 'vue';
     import { getActiveFillColor, getFillColor, getStrokeColor, getStrokeWidth } from '../../utils/styler';
 
     const props = defineProps({
         activeChildId: Number,
-        childEntities: Array,
+        childEntitiesMap: Object,
         childCoordinates: Array,
     });
 
@@ -45,15 +46,22 @@
             if (!c) return;
             const center = Array.isArray(c) ? c : [c.x, c.y];
             const feat = new Feature(new Point(center));
-            feat.set('name', c.name ?? '');
             feat.set('entity_id', c.entity_id ?? null);
             feat.set('child', c);
 
+            console.log("ADD TEXT!!!", c);
             const fillColor = (c.entity_id === props.activeChildId) ? getActiveFillColor(c.entity_id) : getFillColor(c.entity_id);
             feat.setStyle(new Style({
                 image: new StyleCircle({
                     radius: 8, fill: new Fill({ color: fillColor.rgb().string() }),
                     stroke: new Stroke({ color: getStrokeColor(c.entity_id).rgb().string(), width: getStrokeWidth() })
+                }),
+                text: new Text({
+                    text: props.childEntitiesMap[c.entity_id]?.name ?? 'N/A',
+                    offsetY: -16,
+                    fill: new Fill({ color: '#222' }),
+                    stroke: new Stroke({ color: '#fff', width: 3 }),
+                    font: 'bold 12px sans-serif',
                 })
             }));
             vectorSource.addFeature(feat);
@@ -79,6 +87,9 @@
                     })
                 })
             ],
+            interactions: defaultInteractions({
+                doubleClickZoom: false,
+            }),
             controls: [],
             view: new View({
                 center: [0, 0],

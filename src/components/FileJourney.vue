@@ -8,7 +8,7 @@
             v-else-if="useMap"
             :activeChildId="activeChildId"
             :childCoordinates="childCoordinates"
-            :childEntities="childEntities"
+            :childEntitiesMap="childEntitiesMap"
             @update-active-child="emit('update-active-child', $event)"
             @item-clicked="emit('select-child', $event)"
         />
@@ -60,53 +60,12 @@
 
     const emit = defineEmits(['select-child', 'update-active-child']);
 
-    // onMounted(async () => {
-    //     const urlParams = new URLSearchParams(window.location.search);
-    //     const activePath = urlParams.get('path')?.split(',') ?? [];
-
-    //     let currentItem = configuration;
-    //     for (const segment of activePath) {
-    //         currentItem = currentItem.children.find(child => child.name === segment);
-    //         if (!currentItem) {
-    //             path.value = '';
-    //             currentItem = configuration;
-    //             break;
-    //         }
-    //     }
-
-    //     path.value = activePath.join('/');
-    //     activeItem.value = currentItem;
-
-    //     updateParts();
-    //     console.log("Entity on mount:", entity.value);
-    // });
-
-    // const parts = ref([]);
-
-    // const updatePath = (item) => {
-    //     console.log('Updating path with item:', item);
-    //     path.value.split('/').pop();
-    //     if (!item.root) {
-    //         if (path.value) {
-    //             path.value += '/';
-    //         }
-    //         path.value += item.name;
-    //     }
-    //     updateParts();
-    //     // SET URL parameter
-    //     const url = new URL(window.location);
-    //     url.searchParams.set('path', path.value.split('/').join(','));
-    //     window.history.pushState({}, '', url);
-    // }
-
-    // const updateParts = () => {
-    //     parts.value = path.value.split('/').map((name, index, arr) => {
-    //         return {
-    //             name: name,
-    //             path: arr.slice(0, index + 1).join('/')
-    //         };
-    //     });
-    // }
+    const childEntitiesMap = computed(() => {
+        return props.childEntities?.reduce((acc, c) => {
+            acc[c.id] = c;
+            return acc;
+        }, {}) ?? {};
+    });
 
     const mount = (item) => {
         console.log('Item clicked:', item);
