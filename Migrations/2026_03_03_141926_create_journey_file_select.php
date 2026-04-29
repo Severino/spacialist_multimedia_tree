@@ -20,7 +20,7 @@ class CreateJourneyFileSelect extends Migration
             // This could be assessed from the entity_id, but it is easier to query if we have it here as well.
             // (With the downsode that we need to maintain it when the entity changes)
             $table->boolean('is_map')->default(false);
-            $table->unsignedBigInteger('file_id');
+            $table->unsignedBigInteger('file_id')->nullable();
             $table->unsignedBigInteger('entity_id')->unique();
             $table->json('options')->nullable();
             $table->boolean('locked')->default(false);

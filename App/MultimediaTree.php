@@ -12,4 +12,14 @@ class MultimediaTree
     {
         info('Template Plugin loaded');
     }
+
+    public static function sayHello()
+    {
+        return 'Hello from MultimediaTree Plugin!';
+    }
+
+    public static function sayBye()
+    {
+        return 'Goodbye from MultimediaTree Plugin!';
+    }
 }

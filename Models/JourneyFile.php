@@ -5,32 +5,29 @@ use App\Models\Entity;
 use App\Plugins\File\App\Models\File;
 use Illuminate\Database\Eloquent\Model;
 
-class JourneyFile extends Model
-{
+class JourneyFile extends Model {
     protected $table = 'plugin_multimedia_tree_journey_files';
 
     // References entity_id and file_id
     protected $fillable = [
-        'entity_id', 
-        'file_id', 
-        'locked'
+        'entity_id',
+        'file_id',
+        'locked',
+        'is_map',
     ];
 
-    public function file()
-    {
+    public function file() {
         return $this->belongsTo(File::class, 'file_id');
     }
 
-    public function entity()
-    {
+    public function entity() {
         return $this->belongsTo(Entity::class, 'entity_id');
     }
 
-    public static function getByEntityId($entityId)
-    {
+    public static function getByEntityId($entityId) {
         $journeyFile = self::where('entity_id', $entityId)->first();
 
-        if (! $journeyFile) {
+        if (!$journeyFile) {
             return null;
         }
 
@@ -41,26 +38,30 @@ class JourneyFile extends Model
         return $journeyFile;
     }
 
-    public static function unset($entityId)
-    {
+    public static function unset($entityId) {
         self::where('entity_id', $entityId)->delete();
     }
 
-    public static function set($entityId, $fileId)
-    {
+    public static function set($entityId, $fileId, $isMap = false) {
         // First, delete any existing entry for this entity
         static::unset($entityId);
 
+        info("is_map = $isMap");
         // Then, create a new entry
         return self::create([
             'entity_id' => $entityId,
-            'file_id'   => $fileId,
+            'file_id' => $fileId,
+            'is_map' => $isMap,
         ]);
     }
 
-public static function setLocked($entityId, $locked)
-{
-    return static::where('entity_id', $entityId)
-        ->update(['locked' => $locked]);
-}
+    public static function setLocked($entityId, $locked) {
+        return static::where('entity_id', $entityId)
+            ->update(['locked' => $locked]);
+    }
+
+    public static function isLocked($entityId) : bool {
+        $journeyFile = self::where('entity_id', $entityId)->first();
+        return $journeyFile ? $journeyFile->locked : false;
+    }
 }

@@ -45,6 +45,9 @@
             if (!c) return;
             const center = Array.isArray(c) ? c : [c.x, c.y];
             const feat = new Feature(new Point(center));
+            feat.set('name', c.name ?? '');
+            feat.set('entity_id', c.entity_id ?? null);
+            feat.set('child', c);
 
             const fillColor = (c.entity_id === props.activeChildId) ? getActiveFillColor(c.entity_id) : getFillColor(c.entity_id);
             feat.setStyle(new Style({
@@ -95,9 +98,21 @@
         updateMarkers();
 
         map.on('click', function (evt) {
+            const clickedFeature = map.forEachFeatureAtPixel(evt.pixel, (feature) => feature);
+            if (clickedFeature) {
+                const child = clickedFeature.get('child');
+                const entityId = clickedFeature.get('entity_id');
+                if (child?.entity_id) {
+                    emit('item-clicked', child);
+                } else if (entityId) {
+                    emit('item-clicked', { entity_id: entityId });
+                }
+                return;
+            }
+
             if (!evt.originalEvent.ctrlKey || !props.activeChildId) return;
             const coordinate = evt.coordinate;
-            const emitObject = { entity_id: props.activeChildId, x: coordinate[0], y: coordinate[1] };
+            const emitObject = { entity_id: props.activeChildId, x: coordinate[0], y: coordinate[1], z: 0 };
             console.log('Map clicked at coordinate:', emitObject);
             // emit to parent (parent may persist and return via props)
             emit('update-active-child', emitObject);

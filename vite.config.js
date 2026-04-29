@@ -13,7 +13,7 @@ const manifestText = readFileSync('plugin.xml', 'utf8');
 const manifest = xmlParser.parse(manifestText);
 pluginName = manifest?.info?.name;
 
-if(!pluginName) {
+if (!pluginName) {
     throw new Error('plugin.xml does not contain a name');
 }
 // Check if Vite is running in development mode
@@ -61,11 +61,12 @@ export default defineConfig({
             fileName: (format) => `${pluginName.toLowerCase()}.${format}.js`
         },
         rollupOptions: {
-            external: ['vue'],
+            external: ['vue', 'bootstrap'],
             output: {
                 globals: {
-                    vue: 'Vue'
-                }
+                    bootstrap: 'bootstrap',
+                    vue: 'Vue',
+                },
             }
         }
     },

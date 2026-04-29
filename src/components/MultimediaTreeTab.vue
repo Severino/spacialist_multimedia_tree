@@ -35,12 +35,13 @@
                     @select-child="(item) => activeChildId = item.entity_id"
                 />
                 <div
-                    class="bg-white rounded m-2 p-2 position-absolute top-0 start-0"
-                    style="width: 250px; max-height: 400px; overflow-y: auto;"
+                    class="bg-white rounded m-2 p-2 position-absolute top-0 start-0 overflow-y-auto"
+                    style="width: 250px; max-height: min(600px, 85%);"
                 >
                     <ChildSelection
                         v-model="activeChildId"
                         :children="childEntities"
+                        :childCoordinates="childCoordinates"
                         :hasParent="!!entity?.parent"
                         @visit-child="setEntity"
                         @visit-parent="setEntityToParent"
