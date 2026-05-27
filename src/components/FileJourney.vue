@@ -4,13 +4,27 @@
             v-if="!file && !useMap"
             class="position-absolute top-50 start-50 translate-middle"
         >{{ t("error.no_file") }}</div>
-        <MapViewer
+        <component
+            v-else-if="component"
+            :is="component"
+            :item="file"
+            :lock="lock"
+            :activeChildId="activeChildId"
+            :childCoordinates="childCoordinates"
+            :childEntities="childEntities"
+            :childEntitiesMap="childEntitiesMap"
+            @update-active-child="emit('update-active-child', $event)"
+            @item-clicked="emit('select-child', $event)"
+            @navigate-to-child="emit('navigate-to-child', $event)"
+        />
+        <!-- <MapViewer
             v-else-if="useMap"
             :activeChildId="activeChildId"
             :childCoordinates="childCoordinates"
             :childEntitiesMap="childEntitiesMap"
             @update-active-child="emit('update-active-child', $event)"
             @item-clicked="emit('select-child', $event)"
+            @navigate-to-child="emit('navigate-to-child', $event)"
         />
         <ImageViewer
             v-else-if="file.category === 'image'"
@@ -21,6 +35,8 @@
             :childEntities="childEntities"
             @update-active-child="emit('update-active-child', $event)"
             @item-clicked="emit('select-child', $event)"
+            @navigate-to-child="emit('navigate-to-child', $event)"
+
         />
         <ThreeDeeViewer
             v-else-if="file.category === '3d'"
@@ -30,8 +46,9 @@
             :childCoordinates="childCoordinates"
             :childEntities="childEntities"
             @update-active-child="emit('update-active-child', $event)"
-            @item-clicked="mount"
-        />
+            @item-clicked="emit('select-child', $event)"
+            @navigate-to-child="emit('navigate-to-child', $event)"
+        /> -->
         <div
             class="position-absolute top-50 start-50 translate-middle"
             v-else
@@ -58,7 +75,8 @@
         useMap: Boolean,
     });
 
-    const emit = defineEmits(['select-child', 'update-active-child']);
+    const emit = defineEmits(['select-child', 'update-active-child', 'navigate-to-child']);
+
 
     const childEntitiesMap = computed(() => {
         return props.childEntities?.reduce((acc, c) => {
@@ -67,7 +85,19 @@
         }, {}) ?? {};
     });
 
-    const mount = (item) => {
-        console.log('Item clicked:', item);
+    const modules = {
+        'image': ImageViewer,
+        '3d': ThreeDeeViewer,
+        'map': MapViewer,
     }
+
+    const component = computed(() => {
+        if (props.useMap)  return MapViewer;
+        
+        if(modules[props.file?.category]) {
+            return modules[props.file.category];
+        }
+
+        return null;
+    });
 </script>

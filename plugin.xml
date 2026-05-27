@@ -16,7 +16,7 @@
     <migrations path="Migrations" />
     <dependencies>
         <!-- Other plugins this plugin depends on -->
-         <file />
+        <File />
     </dependencies>
     <permissions>
         <!-- Other requirements this plugin depends on -->
@@ -35,7 +35,6 @@
     </components>
     <hooks>
         <hook src="App/MultimediaTree@sayHello" on="api/v1/entity/{id}" />
-        <hook src="App/MultimediaTree@sayBye" on="DELETE::api/v1/entity/{id}" />
     </hooks>
     <css>
         <file src="dist/style.css" />

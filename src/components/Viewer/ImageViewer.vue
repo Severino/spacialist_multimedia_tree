@@ -135,42 +135,6 @@
             canvas.on('mouse:dblclick', function (opt) {
                 resetPosition(true);
             });
-
-            // // Touch support for mobile
-            // let lastDistance = 0;
-            // let lastTouchX = 0;
-            // let lastTouchY = 0;
-
-            // canvas.on('touch:gesture', function (opt) {
-            //     if (props.lock) return;
-
-            //     if (opt.e.touches && opt.e.touches.length === 2) {
-            //         const touch1 = opt.e.touches[0];
-            //         const touch2 = opt.e.touches[1];
-
-            //         const distance = Math.sqrt(
-            //             Math.pow(touch2.clientX - touch1.clientX, 2) +
-            //             Math.pow(touch2.clientY - touch1.clientY, 2)
-            //         );
-
-            //         if (lastDistance > 0) {
-            //             let zoom = canvas.getZoom();
-            //             zoom *= distance / lastDistance;
-
-            //             if (zoom > maxZoom) zoom = maxZoom;
-            //             if (zoom < minZoom) zoom = minZoom;
-
-            //             const center = new Point(
-            //                 (touch1.clientX + touch2.clientX) / 2,
-            //                 (touch1.clientY + touch2.clientY) / 2
-            //             );
-
-            //             canvas.zoomToPoint(center, zoom);
-            //         }
-
-            //         lastDistance = distance;
-            //     }
-            // });
         } else {
             console.error('Canvas reference is not available.');
         }
@@ -333,7 +297,13 @@
                 window.canvas = canvas;
 
                 marker.on('mousedown', (event) => {
-                    emit('item-clicked', child);
+                    event.e.preventDefault();
+                    event.e.stopPropagation();
+                    if (event.e.altKey) {
+                        emit('navigate-to-child', child);
+                    } else {
+                        emit('item-clicked', child);
+                    }
                 });
 
                 activeMarkers.value.push(marker);

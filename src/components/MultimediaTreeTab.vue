@@ -11,8 +11,11 @@
                 class="btn btn-sm btn-outline-secondary mb-2"
                 @click="updateSelectedFile(selectedFile, !useMap)"
             >Map</button>
-            <div class="d-flex" v-if="!useMap">
-            
+            <div
+                class="d-flex"
+                v-if="!useMap"
+            >
+
                 <FileSelection
                     class="mb-2 flex-grow-1"
                     :locked="fileLocked"
@@ -33,6 +36,7 @@
                     :useMap="useMap"
                     @update-active-child="updateChildCoordinates"
                     @select-child="(item) => activeChildId = item.entity_id"
+                    @navigate-to-child="(entity) => setEntity(entity.entity_id)"
                 />
                 <div
                     class="bg-white rounded m-2 p-2 position-absolute top-0 start-0 overflow-y-auto"
@@ -137,18 +141,27 @@
         await update();
     });
 
-    onActivated(async (to, from, next) => {
+    onActivated(async () => {
         await update();
-        next();
     });
 
-    function setEntity (childId) {
-        const entity = SpPS.api.store.entityStore.getEntity(childId) ?? null;
-        SpPS.api.store.entityStore.set(entity)
+    function setEntity(childId) {
+        if(!SpPS.api.router) {
+            console.error("Router instance not found. Cannot navigate to child entity.");
+            return;
+        }
+        const router = SpPS.api.router;
+        router.push({
+            name: 'entitydetail',
+            params: {
+                id: childId
+            },
+            query: router.currentRoute.value.query
+        });
     };
 
     function setEntityToParent() {
-        if(entity.value.parent){
+        if (entity.value.parent) {
             const parentEntity = SpPS.api.store.entityStore.getEntity(entity.value.parent) ?? null;
             SpPS.api.store.entityStore.set(parentEntity)
         }

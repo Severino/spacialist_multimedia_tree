@@ -21,6 +21,26 @@ export function createPluginPolyfill() {
         api: {
             store: mockStores,
             http: (method, url, data) => mockRoutes.http(method, url, data),
+            router: {
+                push: (route) => {
+                    console.log(`Navigating to `, route);
+                    const entityId = route?.params?.id ?? 0;
+                    
+                    if(!entityId) {
+                        console.error("No entity ID provided in route params.");
+                        return;
+                    }
+
+                    const entity = mockStores?.entityStore?.getEntity(entityId);
+                    mockStores?.entityStore?.set(entity);
+
+                },
+                currentRoute: {
+                    value: {
+                        query: ""
+                    }
+                }
+            },
         },
         data: {
             t: window.i18n.global.t,

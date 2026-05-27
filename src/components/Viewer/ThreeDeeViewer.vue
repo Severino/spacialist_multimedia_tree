@@ -36,7 +36,7 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { useCanvas } from '../../composables/canvas-viewer';
     import { univeralLoader } from '../../utils/3d';
-import { getActiveFillColor, getFillColor } from '../../utils/styler';
+    import { getActiveFillColor, getFillColor } from '../../utils/styler';
 
     const loading = ref(false);
     const progress = ref(0);
@@ -76,7 +76,7 @@ import { getActiveFillColor, getFillColor } from '../../utils/styler';
         }
     });
 
-    const emit = defineEmits(['item-clicked', 'update-active-child']);
+    const emit = defineEmits(['item-clicked', 'update-active-child', 'navigate-to-child']);
 
     onMounted(async () => {
         // Initialize Three.js scene
@@ -141,9 +141,15 @@ import { getActiveFillColor, getFillColor } from '../../utils/styler';
         );
 
         raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(scene.children, true);
+        const intersects = raycaster
+            .intersectObjects(scene.children, true)
+            .filter(intersect => intersect.object.target);
+
         if (intersects.length > 0) {
+
             const firstIntersect = intersects[0];
+
+            console.log('Clicked on object:', intersects);
 
             if (event.ctrlKey) {
                 if (!props.activeChildId) {
@@ -164,9 +170,10 @@ import { getActiveFillColor, getFillColor } from '../../utils/styler';
                 });
 
             } else if (firstIntersect.object.target) {
-                const targetChild = props.item.children.find(child => child.name === firstIntersect.object.target);
-                if (targetChild) {
-                    emit('item-clicked', targetChild);
+                if (event.altKey) {
+                    emit('navigate-to-child', firstIntersect.object.target);
+                } else {
+                    emit('item-clicked', firstIntersect.object.target);
                 }
             }
         }
@@ -228,7 +235,7 @@ import { getActiveFillColor, getFillColor } from '../../utils/styler';
             // Low-intensity ambient to lift dark areas while keeping directional look
             const ambient = new THREE.AmbientLight(0xffffff, 0.3);
             scene.add(ambient);
-            
+
 
             // Click handler for 3D scene
             container.value.addEventListener('click', onSceneClick);
@@ -277,6 +284,39 @@ import { getActiveFillColor, getFillColor } from '../../utils/styler';
         });
     }
 
+    function createTextSprite(text, color) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const fontSize = 48;
+        const outlineWidth = 6;
+        const padding = outlineWidth;
+
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        const textWidth = ctx.measureText(text).width;
+        canvas.width = textWidth + padding * 2;
+        canvas.height = fontSize + padding * 2;
+
+        // Outlined text (stroke drawn first so fill sits on top)
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = outlineWidth * 2;
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+        ctx.strokeText(text, padding, canvas.height / 2);
+        ctx.fillStyle = color;
+        ctx.fillText(text, padding, canvas.height / 2);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const material = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+        const sprite = new THREE.Sprite(material);
+
+        // Scale so text appears at a readable size relative to the canvas aspect
+        const aspect = canvas.width / canvas.height;
+        sprite.scale.set(aspect, 1, 1);
+
+        return sprite;
+    }
+
     const childGeometries = ref([]);
     const updateChildren = () => {
         // Remove old child geometries
@@ -288,19 +328,42 @@ import { getActiveFillColor, getFillColor } from '../../utils/styler';
         const { cameraDistance } = getObjectDimensions();
 
         const sphereRadius = 0.01 * cameraDistance;
+        const labelOffset = sphereRadius;
+        const labelScale = sphereRadius * 1;
 
         props.childCoordinates.forEach(child => {
-            // For 3D models, we might want to log the 3D position directly
+            const isActive = child.entity_id === props.activeChildId;
+            const color = isActive ? getActiveFillColor(child.entity_id).hex() : getFillColor(child.entity_id).hex();
+
+            // Sphere
             const geometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
-            const material = new THREE.MeshStandardMaterial({ color: child.entity_id === props.activeChildId ? getActiveFillColor(child.entity_id).hex() : getFillColor(child.entity_id).hex() });
+            const material = new THREE.MeshStandardMaterial({ color });
             const sphere = new THREE.Mesh(geometry, material);
             sphere.position.set(child.x, child.y, child.z);
-            sphere.target = child.name; // Store reference to child data
+            sphere.target = child;
             sphere.castShadow = true;
             sphere.receiveShadow = true;
             scene.add(sphere);
             childGeometries.value.push(sphere);
+
+            // Text label
+            const entity = props.childEntities?.find(e => e.id === child.entity_id);
+            const label = entity?.name ?? String(child.entity_id);
+            const sprite = createTextSprite(label, isActive ? color : '#ffffff');
+            sprite.target = child;
+            sprite.userData.baseAspect = sprite.scale.x / sprite.scale.y;
+            sprite.scale.set(labelScale * sprite.userData.baseAspect, labelScale, 1);
+            sprite.position.set(child.x, child.y - (sphereRadius + labelOffset), child.z);
+            scene.add(sprite);
+            childGeometries.value.push(sprite);
         });
+    }
+
+    function addTextLabel(text, position, color = '#ffffff') {
+        const sprite = createTextSprite(text, color);
+        sprite.position.copy(position);
+        scene.add(sprite);
+        return sprite;
     }
 
     const mount = async () => {
@@ -348,10 +411,23 @@ import { getActiveFillColor, getFillColor } from '../../utils/styler';
             updateChildren();
 
             // Start animation
+            const vFovHalf = (camera.fov * Math.PI) / 360; // half-fov in radians
+            const labelHeightPx = 24; // desired label height in pixels
             function animate() {
                 if (!renderer || !scene || !camera) return;
                 animationId = requestAnimationFrame(animate);
                 if (controls) controls.update();
+
+                // Keep label sprites constant screen size regardless of zoom
+                const viewH = renderer.domElement.height;
+                childGeometries.value.forEach(obj => {
+                    if (!obj.isSprite) return;
+
+                    const dist = camera.position.distanceTo(obj.position);
+                    const worldHeight = 2 * Math.tan(vFovHalf) * dist * (labelHeightPx / viewH);
+                    obj.scale.set(worldHeight * obj.userData.baseAspect, worldHeight, 1);
+                });
+
                 renderer.render(scene, camera);
             }
             animate();
@@ -362,6 +438,7 @@ import { getActiveFillColor, getFillColor } from '../../utils/styler';
             loading.value = false;
         }
     };
+
 
     const getObjectDimensions = () => {
         let center = new THREE.Vector3();
