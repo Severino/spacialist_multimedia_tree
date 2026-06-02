@@ -13,7 +13,7 @@
         <spacialist></spacialist>
         <php></php>
     </compatibility>
-    <migrations path="Migrations" />
+    <migrations src="Migrations" />
     <dependencies>
         <!-- Other plugins this plugin depends on -->
         <File />
