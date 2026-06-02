@@ -31,7 +31,8 @@ package: clean
 	[ -d App ] && rsync -zah App $(build_src)/$(package_root)/ || true
 	[ -d Attributes ] && rsync -zah Attributes $(build_src)/$(package_root)/ || true
 	[ -d Controllers ] && rsync -zah Controllers $(build_src)/$(package_root)/ || true
-	[ -d Migration ] && rsync -zah Migration $(build_src)/$(package_root)/ || true
+	[ -d Migrations ] && rsync -zah Migrations $(build_src)/$(package_root)/ || true
+	[ -d Models ] && rsync -zah Models $(build_src)/$(package_root)/ || true
 	[ -d routes ] && rsync -zah routes $(build_src)/$(package_root)/ || true
 	# Copy files if they exist
 	[ -f $(dst_dir)/$(package_name).umd.js ] && cp $(dst_dir)/$(package_name).umd.js $(build_src)/$(package_root)/ || true
