@@ -36,7 +36,7 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { useCanvas } from '../../composables/canvas-viewer';
     import { univeralLoader } from '../../utils/3d';
-    import { getActiveFillColor, getFillColor } from '../../utils/styler';
+    import { getActiveFillColor, getFillColor, getTextColor, getTextStrokeColor } from '../../utils/styler';
 
     const loading = ref(false);
     const progress = ref(0);
@@ -284,7 +284,7 @@
         });
     }
 
-    function createTextSprite(text, color) {
+    function createTextSprite(text) {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         const fontSize = 48;
@@ -301,9 +301,9 @@
         ctx.textBaseline = 'middle';
         ctx.lineWidth = outlineWidth * 2;
         ctx.lineJoin = 'round';
-        ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+        ctx.strokeStyle =  getTextStrokeColor().hex();
         ctx.strokeText(text, padding, canvas.height / 2);
-        ctx.fillStyle = color;
+        ctx.fillStyle = getTextColor().hex();
         ctx.fillText(text, padding, canvas.height / 2);
 
         const texture = new THREE.CanvasTexture(canvas);
@@ -349,7 +349,7 @@
             // Text label
             const entity = props.childEntities?.find(e => e.id === child.entity_id);
             const label = entity?.name ?? String(child.entity_id);
-            const sprite = createTextSprite(label, isActive ? color : '#ffffff');
+            const sprite = createTextSprite(label);
             sprite.target = child;
             sprite.userData.baseAspect = sprite.scale.x / sprite.scale.y;
             sprite.scale.set(labelScale * sprite.userData.baseAspect, labelScale, 1);
@@ -357,13 +357,6 @@
             scene.add(sprite);
             childGeometries.value.push(sprite);
         });
-    }
-
-    function addTextLabel(text, position, color = '#ffffff') {
-        const sprite = createTextSprite(text, color);
-        sprite.position.copy(position);
-        scene.add(sprite);
-        return sprite;
     }
 
     const mount = async () => {

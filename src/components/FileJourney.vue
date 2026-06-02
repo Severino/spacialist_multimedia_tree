@@ -1,5 +1,5 @@
 <template>
-    <div class="canvas-container h-100 bg-light position-relative">
+    <div class="canvas-container h-100 bg-light position-relative rounded overflow-hidden">
         <div
             v-if="!file && !useMap"
             class="position-absolute top-50 start-50 translate-middle"
@@ -17,38 +17,6 @@
             @item-clicked="emit('select-child', $event)"
             @navigate-to-child="emit('navigate-to-child', $event)"
         />
-        <!-- <MapViewer
-            v-else-if="useMap"
-            :activeChildId="activeChildId"
-            :childCoordinates="childCoordinates"
-            :childEntitiesMap="childEntitiesMap"
-            @update-active-child="emit('update-active-child', $event)"
-            @item-clicked="emit('select-child', $event)"
-            @navigate-to-child="emit('navigate-to-child', $event)"
-        />
-        <ImageViewer
-            v-else-if="file.category === 'image'"
-            :item="file"
-            :lock="false"
-            :activeChildId="activeChildId"
-            :childCoordinates="childCoordinates"
-            :childEntities="childEntities"
-            @update-active-child="emit('update-active-child', $event)"
-            @item-clicked="emit('select-child', $event)"
-            @navigate-to-child="emit('navigate-to-child', $event)"
-
-        />
-        <ThreeDeeViewer
-            v-else-if="file.category === '3d'"
-            :item="file"
-            :lock="lock"
-            :activeChildId="activeChildId"
-            :childCoordinates="childCoordinates"
-            :childEntities="childEntities"
-            @update-active-child="emit('update-active-child', $event)"
-            @item-clicked="emit('select-child', $event)"
-            @navigate-to-child="emit('navigate-to-child', $event)"
-        /> -->
         <div
             class="position-absolute top-50 start-50 translate-middle"
             v-else

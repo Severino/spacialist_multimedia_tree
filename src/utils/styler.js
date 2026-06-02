@@ -1,23 +1,33 @@
 import Color from "color";
 
+/**
+ * This is the basic "style sheet" for drawing the points in the viewers.
+ * In the future this can be modified and everything is already in one place. 
+ * For now, it is just a collection of constants and getter functions.
+ */
 
-const fill = Color.rgb(255, 255, 0);
-const activeFill = Color.rgb(255, 0, 0);
-const stroke = Color.rgb(0,0,0);
+const yellow = Color.rgb(248, 248, 248);
+const red = Color.rgb(0, 89, 255);
+const black = Color.rgb(0,0,0);
+const white = Color.rgb(255,255,255);
+
+// ======= STROKE ======
 const strokeWidth = 1;
+const strokeColor = black;
 
-export function getActiveFillColor(entity_id = null) {
-    return activeFill;
-}
+// ======= TEXT ======
+const textColor = black;
+const textStrokeColor = white;
 
-export function getFillColor(entity_id = null) {
-    return fill;
-}
+// ======= FILL ======
+const fillColor = yellow;
+const activeFillColor = red;
 
-export function getStrokeColor(entity_id = null) {
-    return stroke;
-}
+export const getActiveFillColor = () => activeFillColor;
+export const getFillColor = () => fillColor;
 
-export function getStrokeWidth(entity_id = null) {
-    return strokeWidth;
-}
+export const getStrokeColor = () => strokeColor;
+export const getStrokeWidth = () => strokeWidth; 
+
+export const getTextColor = () => textColor; 
+export const getTextStrokeColor = () => textStrokeColor;

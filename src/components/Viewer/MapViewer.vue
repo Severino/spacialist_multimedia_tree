@@ -19,7 +19,7 @@
     import { Style, Fill, Stroke, Circle as StyleCircle, Text } from 'ol/style';
 
     import { nextTick, onMounted, watch } from 'vue';
-    import { getActiveFillColor, getFillColor, getStrokeColor, getStrokeWidth } from '../../utils/styler';
+    import { getActiveFillColor, getFillColor, getStrokeColor, getStrokeWidth, getTextStrokeColor, getTextColor } from '../../utils/styler';
 
     const props = defineProps({
         activeChildId: Number,
@@ -49,7 +49,6 @@
             feat.set('entity_id', c.entity_id ?? null);
             feat.set('child', c);
 
-            console.log("ADD TEXT!!!", c);
             const fillColor = (c.entity_id === props.activeChildId) ? getActiveFillColor(c.entity_id) : getFillColor(c.entity_id);
             feat.setStyle(new Style({
                 image: new StyleCircle({
@@ -59,8 +58,8 @@
                 text: new Text({
                     text: props.childEntitiesMap[c.entity_id]?.name ?? 'N/A',
                     offsetY: -16,
-                    fill: new Fill({ color: '#222' }),
-                    stroke: new Stroke({ color: '#fff', width: 3 }),
+                    fill: new Fill({ color: getTextColor().rgb().string() }),
+                    stroke: new Stroke({ color: getTextStrokeColor().rgb().string(), width: 3 }),
                     font: 'bold 12px sans-serif',
                 })
             }));
@@ -83,7 +82,8 @@
             layers: [
                 new TileLayer({
                     source: new XYZ({
-                        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+                        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        attributions: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors CC-BY-SA'
                     })
                 })
             ],

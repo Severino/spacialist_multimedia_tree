@@ -13,6 +13,14 @@
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { useCanvas } from '../../composables/canvas-viewer';
     import { Canvas, Circle, FabricImage, Point, FabricText as Text } from 'fabric';
+    import {
+        getStrokeColor,
+        getStrokeWidth,
+        getFillColor,
+        getActiveFillColor,
+        getTextColor,
+        getTextStrokeColor,
+    } from '../../utils/styler';
 
     const emit = defineEmits(['item-clicked', 'update-active-child']);
 
@@ -135,6 +143,16 @@
             canvas.on('mouse:dblclick', function (opt) {
                 resetPosition(true);
             });
+
+            const resizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    const { width, height } = entry.contentRect;
+                    canvas.setDimensions({ width, height });
+                    resetPosition(true);
+                }
+            });
+
+            resizeObserver.observe(canvasRef.value);
         } else {
             console.error('Canvas reference is not available.');
         }
@@ -267,9 +285,9 @@
                     left: child.x * imageDimensions.width,
                     top: child.y * imageDimensions.height,
                     radius: 5 / scale,
-                    fill: (child.entity_id === props.activeChildId) ? 'yellow' : 'white',
-                    stroke: 'black',
-                    strokeWidth: 1 / scale,
+                    fill: (child.entity_id === props.activeChildId) ? getActiveFillColor() : getFillColor(),
+                    stroke: getStrokeColor(),
+                    strokeWidth: getStrokeWidth() / scale,
                     selectable: false,
                     originX: 'center',
                     originY: 'center',
@@ -279,34 +297,57 @@
 
                 canvas.getZoom();
 
-                const label = new Text(childEntity?.name || "N / A", {
-                    fontFamily: 'Arial',
-                    fontWeight: 'bold',
-                    left: child.x * imageDimensions.width,
-                    top: child.y * imageDimensions.height + (10 / scale),
-                    fontSize: 14 / scale,
-                    fill: (child.entity_id === props.activeChildId) ? 'yellow' : 'white',
-                    shadow: 'rgba(0,0,0) 0px 0px 10px',
-                    selectable: false,
-                    originX: 'center',
-                    originY: 'top',
-                    hoverCursor: 'pointer',
-                });
+                const baseLabelTop = child.y * imageDimensions.height + (10 / scale);
+
+                function createLabel(stroke = false) {
+                    const strokeOptions = {};
+                    let top = baseLabelTop;
+
+                    if (stroke) {
+                        strokeOptions.stroke = getTextStrokeColor().rgb().string();
+                        strokeOptions.strokeWidth = getStrokeWidth() * 6 / scale;
+                        strokeOptions.strokeLineJoin = 'round';
+                        strokeOptions.strokeLineCap = 'round';
+                        // compensate half the stroke thickness so the visual top stays aligned
+                        top -= Math.round(strokeOptions.strokeWidth / 2);
+                    }
+
+                    return new Text(childEntity?.name || "N / A", {
+                        fontFamily: 'Arial',
+                        fontWeight: 'bold',
+                        left: child.x * imageDimensions.width,
+                        top,
+                        fontSize: 16 / scale,
+                        fill: stroke ? 'transparent' : getTextColor().rgb().string(),
+                        selectable: false,
+                        originX: 'center',
+                        originY: 'top',
+                        hoverCursor: 'pointer',
+                        ...strokeOptions,
+                    });
+                }
+
+                const strokeLabel = createLabel(true);
+                canvas.add(strokeLabel);
+
+
+                const label = createLabel();
                 canvas.add(label);
 
                 window.canvas = canvas;
-
-                marker.on('mousedown', (event) => {
-                    event.e.preventDefault();
-                    event.e.stopPropagation();
-                    if (event.e.altKey) {
-                        emit('navigate-to-child', child);
-                    } else {
-                        emit('item-clicked', child);
-                    }
+                [marker, label].forEach(graphics => {
+                    graphics.on('mousedown', (event) => {
+                        event.e.preventDefault();
+                        event.e.stopPropagation();
+                        if (event.e.altKey) {
+                            emit('navigate-to-child', child);
+                        } else {
+                            emit('item-clicked', child);
+                        }
+                    });
+                    activeMarkers.value.push(marker);
                 });
 
-                activeMarkers.value.push(marker);
             });
         }
     }

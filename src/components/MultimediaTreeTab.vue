@@ -53,7 +53,7 @@
                 </div>
             </div>
 
-            <div class="fw-bold text-danger">
+            <div class="fw-bold text-danger" v-if="error">
                 Error: {{ error }}
             </div>
         </template>
