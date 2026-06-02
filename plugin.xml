@@ -4,7 +4,7 @@
     <name>MultimediaTree</name>
     <title>Multimedia Tree Plugin</title>
     <description>Plugin to allow a visual navigation in the project using images, maps and 3D objects.</description>
-    <version>0.1.0</version>
+    <version>1.0.0</version>
     <licence>MIT</licence>
     <authors>
         <author>Severin Opel</author>
@@ -18,24 +18,6 @@
         <!-- Other plugins this plugin depends on -->
         <File />
     </dependencies>
-    <permissions>
-        <!-- Other requirements this plugin depends on -->
-        <!-- <client /> -->
-        <!-- <migration /> -->
-        <!-- <routes /> -->
-        <!-- <public /> -->
-        <!-- <attributes /> -->
-        <!-- <components /> -->
-    </permissions>
-    <attributes>
-        <!-- Attribute names must start with their plugin name -->
-    </attributes>
-    <components>
-        <!-- Attribute names must start with their plugin name -->
-    </components>
-    <hooks>
-        <hook src="App/MultimediaTree@sayHello" on="api/v1/entity/{id}" />
-    </hooks>
     <css>
         <file src="dist/style.css" />
     </css>
